@@ -1,0 +1,64 @@
+# =============================================================================
+# Docker Compose — Stack completa: API + Ollama + ChromaDB
+# =============================================================================
+
+services:
+  # ─── API (FastAPI + RAG + Agentes + MCP) ─────────────────────────────────
+  api:
+    build: .
+    container_name: rag-api
+    ports:
+      - "8000:8000"
+    environment:
+      - RAG_OLLAMA_BASE_URL=http://ollama:11434
+      - RAG_CHROMA_PERSIST_DIR=/data/chroma
+      - RAG_DEBUG=false
+    volumes:
+      - chroma_data:/data/chroma
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  # ─── Ollama (LLM + Embeddings locais e grátis) ──────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: rag-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # ─── Init: baixa os modelos no Ollama ───────────────────────────────────
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: rag-ollama-init
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    depends_on:
+      ollama:
+        condition: service_healthy
+    entrypoint: >
+      sh -c "
+        echo '⏳ Baixando modelo de linguagem...' &&
+        ollama pull llama3.2:3b &&
+        echo '⏳ Baixando modelo de embeddings...' &&
+        ollama pull nomic-embed-text &&
+        echo '✅ Modelos prontos!'
+      "
+    restart: no
+
+volumes:
+  chroma_data:
+  ollama_data:

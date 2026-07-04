@@ -1,0 +1,27 @@
+# Core
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.1
+
+# RAG & IA
+langchain==0.3.17
+langchain-community==0.3.16
+langchain-chroma==0.2.2
+langchain-ollama==0.2.3
+chromadb==0.6.3
+
+# Agentes
+langgraph==0.2.71
+
+# MCP (Model Context Protocol)
+mcp==1.2.1
+
+# Processamento de docs
+pypdf==5.1.0
+python-docx==1.1.2
+markdown==3.7.0
+
+# Utilitários
+python-multipart==0.0.20
+httpx==0.28.1
