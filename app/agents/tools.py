@@ -1,7 +1,7 @@
 """Ferramentas que o agente pode usar."""
 
 from langchain_core.tools import tool
-from app.rag.service import ask as rag_ask
+from app.rag.ask import ask as rag_ask
 from datetime import datetime
 import json
 

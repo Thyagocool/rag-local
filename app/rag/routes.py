@@ -1,4 +1,4 @@
-"""Rotas do RAG — apenas roteamento, logica delegada ao service."""
+"""Rotas do RAG — apenas roteamento, logica delegada aos use cases."""
 
 import tempfile
 from pathlib import Path
@@ -11,14 +11,8 @@ from app.rag.schemas import (
     Source,
     UploadResponse,
 )
-from app.rag.service import (
-    ask,
-    stream_answer,
-    load_document,
-    LOADERS,
-    ingest_documents,
-    clear_all,
-)
+from app.rag.ask import ask, stream_answer
+from app.rag.document import load_document, LOADERS, ingest_documents, clear_all
 
 router = APIRouter()
 
