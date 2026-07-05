@@ -110,7 +110,7 @@ async def upload_file(file: UploadFile = File(...)):
         docs = _load_document(Path(tmp_path))
         ingest_documents(docs)
         return UploadResponse(
-            message=f"✅ {file.filename} indexado com sucesso!",
+            message=f" {file.filename} indexado com sucesso!",
             documents_processed=len(docs),
         )
     finally:
@@ -121,7 +121,7 @@ async def upload_file(file: UploadFile = File(...)):
 def clear_vector_store():
     """Remove todos os documentos do banco vetorial."""
     clear_all()
-    return {"message": "🧹 Banco vetorial limpo!"}
+    return {"message": "Banco vetorial limpo!"}
 
 
 # ─── Agentes ────────────────────────────────────────────────────────────────

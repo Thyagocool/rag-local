@@ -169,10 +169,10 @@ def run_agent(message: str, thread_id: str = "default") -> dict:
                 msg = value["messages"][-1]
                 if hasattr(msg, "tool_calls") and msg.tool_calls:
                     for tc in msg.tool_calls:
-                        steps_log.append(f"🧠 Pensou → chamou {tc['name']}")
+                        steps_log.append(f"Pensou -> chamou {tc['name']}")
             elif node_name == "tools":
                 for msg in value.get("messages", []):
-                    steps_log.append(f"🔧 {msg.name}: {msg.content[:100]}...")
+                    steps_log.append(f"Tool {msg.name}: {msg.content[:100]}...")
 
     # Pega a resposta final
     snapshot = graph.get_state(config)

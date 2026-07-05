@@ -1,11 +1,11 @@
-# 📓 Dia 1 — Setup + RAG funcional
+#  Dia 1 — Setup + RAG funcional
 
 > **Data:** 30/06/2026
 > **Branch:** `main`
 
 ---
 
-## 🎯 O que foi feito
+##  O que foi feito
 
 Revisão completa do projeto, correção de bugs, setup do ambiente e primeira execução do RAG.
 
@@ -55,9 +55,9 @@ app/
 
 ### Correções aplicadas
 
-- 🔧 `observability/logging.py` — structlog configurado com `PrintLogger` (sem `filter_by_level`/`add_logger_name`)
-- 🔧 `main.py` — f-string no lugar de printf-style (`%s`)
-- 🔧 `docker-compose.yml` — `OLLAMA_HOST` adicionado ao container `ollama-init`
+-  `observability/logging.py` — structlog configurado com `PrintLogger` (sem `filter_by_level`/`add_logger_name`)
+-  `main.py` — f-string no lugar de printf-style (`%s`)
+-  `docker-compose.yml` — `OLLAMA_HOST` adicionado ao container `ollama-init`
 
 ### Tools do Agente (LangGraph)
 
@@ -70,7 +70,7 @@ app/
 
 ---
 
-## 🧪 Como testar
+##  Como testar
 
 ```bash
 # Health check
@@ -88,7 +88,7 @@ curl -X POST http://localhost:8000/api/v1/ask \
 
 ---
 
-## 📌 Observações
+##  Observações
 
 - Projeto 100% local (Ollama), sem custos de API
 - RAG testado e respondendo pelo Swagger

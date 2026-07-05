@@ -1,21 +1,21 @@
-# 🧠 RAG + Agentes + MCP + LLMOps
+#  RAG + Agentes + MCP + LLMOps
 
 > Plano de desenvolvimento — 15 dias de projeto prático  
 > Stack: **FastAPI + LangChain + LangGraph + ChromaDB + Ollama + MCP**
 
 ---
 
-## 📋 Contexto
+##  Contexto
 
 - **Dev:** Thyago — nível Sênior em backend
 - **Objetivo:** Aprender na prática o ecossistema de Engenharia de IA (RAG, Agentes, MCP, LLMOps)
 - **Projeto:** API completa rodando 100% local (Ollama pra LLM e embeddings), sem custos de API
-- **Status atual:** ✅ RAG respondendo perguntas, API rodando 100%, Ollama via Docker, agente com LangGraph funcional, MCP Server no ar
+- **Status atual:**  RAG respondendo perguntas, API rodando 100%, Ollama via Docker, agente com LangGraph funcional, MCP Server no ar
 - **Setup:** API local (`uvicorn --reload`) + Ollama no Docker (`docker compose up -d ollama`)
 
 ---
 
-## ✅ O QUE JÁ ESTÁ PRONTO
+##  O QUE JÁ ESTÁ PRONTO
 
 ### 1. Infraestrutura
 - `Dockerfile` — multi-stage build com Python 3.12-slim
@@ -65,12 +65,12 @@
 
 ---
 
-## 🗺️ ROTEIRO — PRÓXIMOS 15 DIAS
+##  ROTEIRO — PRÓXIMOS 15 DIAS
 
 ```
-Dia 1  ─ ✅ Review + alinhamento + projeto rodando + RAG funcional
-Dia 2  ─ ✅ Streaming no RAG (resposta token a token via SSE) ← FEITO
-Dia 3  ─ ✅ Streaming no Agente (LangGraph + SSE) ← FEITO
+Dia 1  ─  Review + alinhamento + projeto rodando + RAG funcional
+Dia 2  ─  Streaming no RAG (resposta token a token via SSE) ← FEITO
+Dia 3  ─  Streaming no Agente (LangGraph + SSE) ← FEITO
 Dia 4  ─ ⏩ Chunking esperto + mais formatos de documento ← PRÓXIMO
 Dia 5  ─ Reranking (melhorar qualidade das respostas)
 Dia 6  ─ Web Search Tool (agente pesquisar na internet)
@@ -87,7 +87,7 @@ Dia 15 ─ Publicar / mostrar pra geral
 
 ---
 
-## 🔧 COMO RODAR
+##  COMO RODAR
 
 ```bash
 # Opção 1 — Híbrido (API local + Ollama em Docker) ← RECOMENDADO P/ DEV
@@ -104,7 +104,7 @@ python -m app.mcp.server
 
 ---
 
-## 🧪 TESTAR SE TUDO FUNCIONA
+##  TESTAR SE TUDO FUNCIONA
 
 ```bash
 # Health check
@@ -127,7 +127,7 @@ curl -X POST http://localhost:8000/api/v1/agent \
 
 ---
 
-## ✅ DIAS 2 e 3 — Streaming (RAG + Agente) — CONCLUÍDOS
+##  DIAS 2 e 3 — Streaming (RAG + Agente) — CONCLUÍDOS
 
 **Streaming no RAG (`/ask/stream`)** — endpoint que responde token a token via SSE.
 **Streaming no Agente (`/agent/stream`)** — endpoint que streama tokens, tool_calls e tool_results.
@@ -154,24 +154,24 @@ curl -N -X POST http://localhost:8000/api/v1/agent/stream \
 
 ---
 
-## 📋 HISTÓRICO DE DIAS
+##  HISTÓRICO DE DIAS
 
 ### Dia 1 (30/06) — Setup + RAG funcional
-- ✅ Projeto revisado e estruturado (8 módulos)
-- ✅ `README.md` + `PLANO.md`
-- ✅ Ollama via Docker + modelos baixados
-- ✅ API rodando com `uvicorn --reload`
-- ✅ RAG respondendo via Swagger
+-  Projeto revisado e estruturado (8 módulos)
+-  `README.md` + `PLANO.md`
+-  Ollama via Docker + modelos baixados
+-  API rodando com `uvicorn --reload`
+-  RAG respondendo via Swagger
 
 ### Dia 2 (04/07) — Streaming no RAG
-- ✅ `app/rag/engine.py` → `ask_stream()` com generator de tokens
-- ✅ `POST /api/v1/ask/stream` → SSE token a token
-- ✅ Limpeza do código: removido observability/ e memory/
+-  `app/rag/engine.py` → `ask_stream()` com generator de tokens
+-  `POST /api/v1/ask/stream` → SSE token a token
+-  Limpeza do código: removido observability/ e memory/
 
 ### Dia 3 (04/07) — Streaming no Agente
-- ✅ `app/agents/agent.py` → `run_agent_stream()` assíncrono
-- ✅ `POST /api/v1/agent/stream` → SSE com tokens, tool_calls, tool_results
-- ✅ Criação de `docs/` com descritivos diários
+-  `app/agents/agent.py` → `run_agent_stream()` assíncrono
+-  `POST /api/v1/agent/stream` → SSE com tokens, tool_calls, tool_results
+-  Criação de `docs/` com descritivos diários
 
 ### Setup atual
 - **API:** rodando local via `uvicorn --reload`
@@ -188,4 +188,4 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ---
 
-> 🚀 **Pra retomar:** colar o link desse repo num prompt novo falando "Retomando o projeto da pasta RAG" que eu recupero o contexto completo.
+>  **Pra retomar:** colar o link desse repo num prompt novo falando "Retomando o projeto da pasta RAG" que eu recupero o contexto completo.

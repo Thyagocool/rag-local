@@ -43,11 +43,11 @@ def calculate(expression: str) -> str:
 def list_available_tools() -> str:
     """Lista todas as ferramentas disponíveis para o agente."""
     return """
-🔧 Ferramentas disponíveis:
+Ferramentas disponiveis:
 1. search_documents - Busca documentos no RAG
 2. get_current_time - Mostra data/hora atual
-3. calculate  - Calcula expressões matemáticas
-4. list_available_tools - Lista esta mensagem
+3. calculate - Calcula expressoes matematicas
+4. list_available_tools - Lista as ferramentas
 """
 
 

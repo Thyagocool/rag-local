@@ -1,10 +1,10 @@
-# 🧠 Explicação para leigos: o que esse projeto faz?
+#  Explicação para leigos: o que esse projeto faz?
 
 > Se você não é programador, não se preocupe — vou explicar tudo em português claro, sem termos técnicos.
 
 ---
 
-## 📖 O problema que a gente quer resolver
+##  O problema que a gente quer resolver
 
 Imagine que você tem **vários documentos** (PDFs, textos, manuais) e quer fazer perguntas sobre eles. Tipo:
 
@@ -16,12 +16,12 @@ Parece mágica, mas não é — é o que esse projeto faz.
 
 ---
 
-## 🏗️ Dia 1 — O RAG (o cérebro do projeto)
+##  Dia 1 — O RAG (o cérebro do projeto)
 
 **RAG** é um nome chique pra um sistema que funciona em 3 passos:
 
 ```
-📄 Documento → 🔍 Busca → 🤖 Resposta
+ Documento →  Busca →  Resposta
 ```
 
 ### Funciona assim:
@@ -46,29 +46,29 @@ Sistema: "O documento informa que a temperatura máxima é 85°C (fonte: manual.
 ```
 
 ### Por que é especial?
-- ✅ 100% gratuito (usa o Ollama, que roda no seu PC)
-- ✅ Funciona offline
-- ✅ Não envia seus dados pra ninguém
+-  100% gratuito (usa o Ollama, que roda no seu PC)
+-  Funciona offline
+-  Não envia seus dados pra ninguém
 
 ---
 
-## ⚡ Dia 2 — Streaming no RAG (responder conforme pensa)
+##  Dia 2 — Streaming no RAG (responder conforme pensa)
 
 No Dia 1, quando você perguntava algo, o sistema pensava **a resposta inteira** e só depois te entregava. Assim:
 
 ```
-Você pergunta → 🤖 (pensando...) → "A temperatura máxima é 85°C"
+Você pergunta →  (pensando...) → "A temperatura máxima é 85°C"
 ```
 
 No Dia 2, a gente mudou pra ele responder **enquanto pensa**. Agora é assim:
 
 ```
-Você pergunta → 🤖 "A" → 🤖 "temperatura" → 🤖 "máxima" → 🤖 "é" → 🤖 "85°C"
+Você pergunta →  "A" →  "temperatura" →  "máxima" →  "é" →  "85°C"
 ```
 
 É como a diferença entre:
-- ❌ **Antes**: esperar o amigo terminar de ler o livro pra te contar o final
-- ✅ **Agora**: o amigo vai lendo em voz alta e você ouve cada palavra conforme ele lê
+-  **Antes**: esperar o amigo terminar de ler o livro pra te contar o final
+-  **Agora**: o amigo vai lendo em voz alta e você ouve cada palavra conforme ele lê
 
 ### Por que isso é bom?
 - **Parece mais rápido** — você vê as palavras chegando
@@ -77,7 +77,7 @@ Você pergunta → 🤖 "A" → 🤖 "temperatura" → 🤖 "máxima" → 🤖 "
 
 ---
 
-## 🤖 Dia 3 — Streaming no Agente (o funcionário esperto)
+##  Dia 3 — Streaming no Agente (o funcionário esperto)
 
 No Dia 1 e 2, o sistema só respondia perguntas com base nos documentos que você subiu. Ele é tipo um **atendente de livraria** que só sabe dos livros que tem na loja.
 
@@ -89,10 +89,10 @@ Além de consultar os documentos (RAG), ele também pode:
 
 | Ferramenta | O que faz | Exemplo |
 |------------|-----------|---------|
-| 🔍 **Pesquisar docs** | Busca nos seus documentos | "O que diz sobre temperatura?" |
-| 🕐 **Ver horas** | Diz a data e hora | "Que horas são?" |
-| 🧮 **Calcular** | Faz contas | "Quanto é 35 + 12?" |
-| 📋 **Auto-ajuda** | Explica o que ele sabe fazer | "O que você pode fazer?" |
+|  **Pesquisar docs** | Busca nos seus documentos | "O que diz sobre temperatura?" |
+|  **Ver horas** | Diz a data e hora | "Que horas são?" |
+|  **Calcular** | Faz contas | "Quanto é 35 + 12?" |
+|  **Auto-ajuda** | Explica o que ele sabe fazer | "O que você pode fazer?" |
 
 ### O streaming no agente
 
@@ -101,20 +101,20 @@ Igual no Dia 2, o agente também responde **enquanto pensa**, mas com um extra: 
 ```
 Você: "Quanto é 150°F em °C?"
 
-🤖 "Vou" → 🤖 "precisar" → 🤖 "calcular" → 
-🔧 [AGENTE USOU A CALCULADORA] → 
-🤖 "150" → 🤖 "graus" → 🤖 "Fahrenheit" → 
-🤖 "equivalem" → 🤖 "a" → 🤖 "65.5" → 🤖 "°C"
+ "Vou" →  "precisar" →  "calcular" → 
+ [AGENTE USOU A CALCULADORA] → 
+ "150" →  "graus" →  "Fahrenheit" → 
+ "equivalem" →  "a" →  "65.5" →  "°C"
 ```
 
 É como assistir um estagiário trabalhando: você vê ele pesquisar no livro, pegar a calculadora, fazer a conta e te dar a resposta — tudo em tempo real.
 
 ---
 
-## 📊 Resumo visual
+##  Resumo visual
 
 ```
-📄 ADICIONA DOCUMENTOS
+ ADICIONA DOCUMENTOS
         ↓
 ┌─────────────────────────────┐
 │      BANCO DE MEMÓRIA       │  ← ChromaDB (arquivo no PC)
@@ -144,7 +144,7 @@ PERGUNTA → ┌─────────────────────�
 
 ---
 
-## 🖥️ Como usar na prática
+##  Como usar na prática
 
 ### Mandar documento
 ```bash
@@ -179,11 +179,11 @@ Conversa com o agente, que usa ferramentas e responde em tempo real.
 
 ---
 
-## 🎯 Pra que serve esse projeto?
+##  Pra que serve esse projeto?
 
 - **Estudo** — aprender como sistemas de IA funcionam na prática
 - **Portfólio** — mostrar em entrevistas que você sabe fazer isso
 - **Uso real** — criar um sistema de perguntas e respostas pros seus documentos
 - **Base pra mais** — a partir daqui dá pra adicionar frontend, deploy, etc.
 
-> ⚡ Tudo 100% gratuito, local e sem depender de serviços pagos!
+>  Tudo 100% gratuito, local e sem depender de serviços pagos!

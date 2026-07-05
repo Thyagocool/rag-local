@@ -1,11 +1,11 @@
-# 📓 Dia 3 — Streaming no Agente (LangGraph)
+#  Dia 3 — Streaming no Agente (LangGraph)
 
 > **Data:** 04/07/2026
 > **Branch:** `feat/agent-streaming`
 
 ---
 
-## 🎯 O que foi feito
+##  O que foi feito
 
 Implementação de streaming token a token no endpoint do agente, usando o suporte nativo do LangGraph (`stream_mode="messages"`).
 
@@ -25,7 +25,7 @@ Implementação de streaming token a token no endpoint do agente, usando o supor
 
 ---
 
-## 🔧 Como funciona
+##  Como funciona
 
 ### `run_agent_stream(message, thread_id)`
 Função assíncrona que usa `graph.astream(stream_mode="messages")` para capturar eventos em tempo real:
@@ -50,7 +50,7 @@ data: {"type": "done"}
 
 ---
 
-## 🧪 Como testar
+##  Como testar
 
 ```bash
 curl -N -X POST http://localhost:8000/api/v1/agent/stream \
@@ -60,17 +60,17 @@ curl -N -X POST http://localhost:8000/api/v1/agent/stream \
 
 ---
 
-## 📊 Status do projeto após Dia 3
+##  Status do projeto após Dia 3
 
 | Módulo | Status |
 |--------|--------|
-| RAG base (ask, upload, clear) | ✅ |
-| Streaming RAG (/ask/stream) | ✅ |
-| Agente LangGraph | ✅ |
-| **Streaming Agente (/agent/stream)** | **✅ NOVO** |
-| MCP Server | ✅ |
+| RAG base (ask, upload, clear) |  |
+| Streaming RAG (/ask/stream) |  |
+| Agente LangGraph |  |
+| **Streaming Agente (/agent/stream)** | ** NOVO** |
+| MCP Server |  |
 
-## 🗂️ Rotas da API (total: 7)
+##  Rotas da API (total: 7)
 
 ```
 POST /ask           → RAG normal
@@ -78,6 +78,6 @@ POST /ask/stream    → RAG com streaming
 POST /upload        → Upload de documento
 DELETE /clear       → Limpar banco vetorial
 POST /agent         → Agente normal
-POST /agent/stream  → Agente com streaming  ✨
+POST /agent/stream  → Agente com streaming  
 GET  /health        → Health check
 ```
