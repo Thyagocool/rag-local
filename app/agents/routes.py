@@ -1,10 +1,10 @@
-"""Rotas do agente — apenas roteamento, logica delegada ao agent."""
+"""Rotas do agente — apenas roteamento, logica delegada ao service."""
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
-from app.api.schemas import AgentRequest, AgentResponse
-from app.agents.agent import run_agent, stream_agent_events
+from app.agents.schemas import AgentRequest, AgentResponse
+from app.agents.service import run_agent, stream_agent_events
 
 router = APIRouter()
 

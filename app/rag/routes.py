@@ -1,17 +1,17 @@
-"""Rotas do RAG — apenas roteamento, logica delegada ao engine."""
+"""Rotas do RAG — apenas roteamento, logica delegada ao service."""
 
 import tempfile
 from pathlib import Path
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
 
-from app.api.schemas import (
+from app.rag.schemas import (
     AskRequest,
     AskResponse,
     Source,
     UploadResponse,
 )
-from app.rag.engine import (
+from app.rag.service import (
     ask,
     stream_answer,
     load_document,

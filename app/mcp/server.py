@@ -13,7 +13,7 @@ from mcp.server import NotificationOptions, Server
 from mcp.server.models import InitializationOptions
 import mcp.server.stdio
 
-from app.rag.engine import ask as rag_ask
+from app.rag.service import ask as rag_ask
 
 logger = logging.getLogger(__name__)
 
