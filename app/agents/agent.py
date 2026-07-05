@@ -7,9 +7,17 @@ from langgraph.graph.message import add_messages
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import ToolNode
 from langchain_ollama import ChatOllama
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
+from langchain_core.messages import (
+    BaseMessage,
+    HumanMessage,
+    AIMessage,
+    AIMessageChunk,
+    SystemMessage,
+    ToolMessage,
+)
 from app.config import settings
 from app.agents.tools import rag_tools
+import json
 import logging
 
 logger = logging.getLogger(__name__)
@@ -92,6 +100,59 @@ memory = MemorySaver()
 graph = workflow.compile(checkpointer=memory)
 
 # ─── Interface ──────────────────────────────────────────────────────────────
+
+
+async def run_agent_stream(message: str, thread_id: str = "default"):
+    """Executa o agente com streaming token a token via SSE.
+
+    Yields dicts com o tipo de evento:
+      - token: pedaço do texto gerado pelo LLM
+      - tool_call: agente chamou uma ferramenta
+      - tool_result: resultado da ferramenta
+      - done: sinaliza fim da execução
+    """
+    config = {"configurable": {"thread_id": thread_id}}
+    messages = [HumanMessage(content=message)]
+
+    input = {"messages": messages}
+
+    # Stream em modo "messages" para capturar tokens individuais
+    async for event in graph.astream(input, config, stream_mode="messages"):
+        if not isinstance(event, (list, tuple)) or len(event) != 2:
+            continue
+
+        msg, metadata = event
+
+        # Tokens do texto sendo gerado
+        if isinstance(msg, AIMessageChunk) and msg.content:
+            yield {"type": "token", "content": msg.content}
+
+        # Chamadas de ferramenta
+        if isinstance(msg, AIMessageChunk) and msg.tool_call_chunks:
+            for tc in msg.tool_call_chunks:
+                yield {
+                    "type": "tool_call",
+                    "name": tc.get("name", "unknown"),
+                    "args": tc.get("args", "{}"),
+                }
+
+        # Resultados das ferramentas
+        if isinstance(msg, ToolMessage):
+            yield {
+                "type": "tool_result",
+                "name": getattr(msg, "name", "tool"),
+                "content": msg.content[:500],
+            }
+
+        # Tool messages também podem vir como ToolMessageChunk
+        if hasattr(msg, "type") and getattr(msg, "type", "") == "tool":
+            yield {
+                "type": "tool_result",
+                "name": getattr(msg, "name", "tool"),
+                "content": msg.content[:500],
+            }
+
+    yield {"type": "done"}
 
 
 def run_agent(message: str, thread_id: str = "default") -> dict:
