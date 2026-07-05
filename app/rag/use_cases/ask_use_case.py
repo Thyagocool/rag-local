@@ -1,8 +1,13 @@
-"""Use case: fazer perguntas ao RAG (normal e streaming)."""
+"""Use case: fazer perguntas ao RAG (normal e streaming).
+
+Agora com reranking opcional — re-ordena os documentos
+recuperados por relevancia antes de gerar a resposta.
+"""
 
 from langchain_core.prompts import ChatPromptTemplate
 from app.infra.llm import LLMFactory
 from app.rag.vector_store import VectorStoreAdapter, get_vector_store_adapter
+from app.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -27,9 +32,17 @@ RETRIEVAL_PROMPT = ChatPromptTemplate.from_messages([
 class AskUseCase:
     """Pergunta ao RAG — resposta completa ou streaming token a token."""
 
-    def __init__(self, vector_store: VectorStoreAdapter | None = None):
+    def __init__(
+        self,
+        vector_store: VectorStoreAdapter | None = None,
+        use_reranking: bool | None = None,
+    ):
         self._llm = None
         self._vector_store = vector_store
+        self._use_reranking = (
+            settings.rag_reranking_enabled if use_reranking is None else use_reranking
+        )
+        self._reranker = None
 
     def _get_llm(self):
         if self._llm is None:
@@ -42,10 +55,24 @@ class AskUseCase:
         return self._vector_store
 
     def _retrieve(self, question: str):
-        """Busca documentos relevantes e monta o contexto."""
+        """Busca documentos relevantes e monta o contexto.
+
+        Se reranking estiver habilitado, busca mais documentos
+        (k=10) e re-ordena pelos mais relevantes.
+        """
         store = self._get_store()
-        retriever = store.as_retriever(search_kwargs={"k": 4})
-        docs = retriever.invoke(question)
+
+        if self._use_reranking:
+            # Busca mais docs pra dar margem pro reranker escolher
+            retriever = store.as_retriever(search_kwargs={"k": 10})
+            docs = retriever.invoke(question)
+            from app.rag.reranking.reranker import rerank
+            docs = rerank(question, docs, top_k=4)
+            logger.debug("Reranking aplicado: 10 -> 4 docs")
+        else:
+            retriever = store.as_retriever(search_kwargs={"k": 4})
+            docs = retriever.invoke(question)
+
         context = "\n\n".join(doc.page_content for doc in docs)
         return docs, context
 
