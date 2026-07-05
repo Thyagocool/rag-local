@@ -1,4 +1,4 @@
-# 🧠 RAG + Agentes + MCP + LLMOps
+#  RAG + Agentes + MCP + LLMOps
 
 API completa de **Engenharia de IA** com **RAG**, **Agentes Inteligentes** (LangGraph), **MCP Server** e **Observabilidade** — tudo rodando **100% local e grátis** com Ollama.
 
@@ -6,21 +6,21 @@ API completa de **Engenharia de IA** com **RAG**, **Agentes Inteligentes** (Lang
 
 ---
 
-## ✨ Funcionalidades
+##  Funcionalidades
 
 | Funcionalidade | Descrição |
 |----------------|-----------|
-| 📄 **RAG** | Upload de documentos (PDF, DOCX, TXT, MD), indexação vetorial e perguntas com respostas baseadas nos docs |
-| 🤖 **Agentes** | Agente com LangGraph que usa ferramentas (RAG, calculadora, hora atual) e tem memória de conversa |
-| 🔌 **MCP** | Servidor no protocolo MCP (Model Context Protocol) — compatível com Claude Desktop, Cline e outros |
-| 💾 **Memória** | Persistência de conversas via SQLite |
-| 📊 **Observabilidade** | Logs estruturados (structlog) + tracing OpenTelemetry |
-| 🐳 **Docker** | Stack completa com Docker Compose |
-| 🎯 **100% local** | LLM e embeddings rodando via Ollama — sem API paga, sem dados saindo da sua máquina |
+|  **RAG** | Upload de documentos (PDF, DOCX, TXT, MD), indexação vetorial e perguntas com respostas baseadas nos docs |
+|  **Agentes** | Agente com LangGraph que usa ferramentas (RAG, calculadora, hora atual) e tem memória de conversa |
+|  **MCP** | Servidor no protocolo MCP (Model Context Protocol) — compatível com Claude Desktop, Cline e outros |
+|  **Memória** | Persistência de conversas via SQLite |
+|  **Observabilidade** | Logs estruturados (structlog) + tracing OpenTelemetry |
+|  **Docker** | Stack completa com Docker Compose |
+|  **100% local** | LLM e embeddings rodando via Ollama — sem API paga, sem dados saindo da sua máquina |
 
 ---
 
-## 🏗️ Estrutura do Projeto
+##  Estrutura do Projeto
 
 ```
 RAG/
@@ -54,7 +54,7 @@ RAG/
 
 ---
 
-## 🚀 Como Rodar
+##  Como Rodar
 
 ### Opção 1 — Docker (recomendado)
 
@@ -83,7 +83,7 @@ source venv/bin/activate
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-> ⚠️ Se o Ollama não estiver instalado, o setup.sh avisa. Instale com:
+>  Se o Ollama não estiver instalado, o setup.sh avisa. Instale com:
 > ```bash
 > curl -fsSL https://ollama.com/install.sh | sh
 > ```
@@ -97,7 +97,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ---
 
-## 📡 Endpoints da API
+##  Endpoints da API
 
 ### Health Check
 ```bash
@@ -133,7 +133,7 @@ curl -X DELETE http://localhost:8000/api/v1/clear
 
 ---
 
-## 🔌 MCP Server
+##  MCP Server
 
 O servidor MCP permite que clientes compatíveis (Claude Desktop, Cline, etc.) consumam as ferramentas do RAG remotamente.
 
@@ -164,7 +164,7 @@ Para conectar no **Claude Desktop**, adicione no `claude_desktop_config.json`:
 
 ---
 
-## ⚙️ Configuração
+##  Configuração
 
 Todas as configs são via variáveis de ambiente com prefixo `RAG_`:
 
@@ -186,7 +186,7 @@ cp .env.example .env
 
 ---
 
-## 🧪 Testando
+##  Testando
 
 ```bash
 # Health check
@@ -201,7 +201,7 @@ curl -s -X POST http://localhost:8000/api/v1/ask \
 
 ---
 
-## 🗺️ Roadmap
+##  Roadmap
 
 O projeto está em desenvolvimento ativo. Veja o [`PLANO.md`](./PLANO.md) para o roteiro completo.
 
@@ -217,7 +217,7 @@ O projeto está em desenvolvimento ativo. Veja o [`PLANO.md`](./PLANO.md) para o
 
 ---
 
-## 📦 Dependências
+##  Dependências
 
 | Categoria | Bibliotecas |
 |-----------|-------------|
@@ -232,6 +232,6 @@ O projeto está em desenvolvimento ativo. Veja o [`PLANO.md`](./PLANO.md) para o
 
 ---
 
-## 📄 Licença
+##  Licença
 
 MIT — sinta-se livre pra usar, estudar e modificar.

@@ -92,7 +92,7 @@ def ingest_documents(docs: list[Document]):
     """Ingere uma lista de documentos no banco vetorial."""
     vector_store = get_vector_store()
     vector_store.add_documents(docs)
-    logger.info(f"✅ {len(docs)} documento(s) ingerido(s)")
+    logger.info(f"{len(docs)} documento(s) ingerido(s)")
 
 
 def clear_all():
@@ -101,4 +101,4 @@ def clear_all():
     ids = vector_store.get()["ids"]
     if ids:
         vector_store.delete(ids)
-        logger.info(f"🗑️ {len(ids)} documento(s) removido(s)")
+        logger.info(f"{len(ids)} documento(s) removido(s)")

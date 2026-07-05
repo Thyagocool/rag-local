@@ -54,7 +54,7 @@ async def handle_call_tool(
     if name == "rag-ask":
         question = arguments.get("question", "") if arguments else ""
         if not question:
-            return [types.TextContent(type="text", text="❌ Pergunta não informada")]
+            return [types.TextContent(type="text", text=" Pergunta não informada")]
 
         result = rag_ask(question)
         return [
@@ -69,12 +69,12 @@ async def handle_call_tool(
         return [
             types.TextContent(
                 type="text",
-                text="✅ RAG MCP Server operacional!",
+                text="RAG MCP Server operacional",
             )
         ]
 
     else:
-        return [types.TextContent(type="text", text=f"❌ Ferramenta desconhecida: {name}")]
+        return [types.TextContent(type="text", text=f"Ferramenta desconhecida: {name}")]
 
 
 async def run_mcp_server():

@@ -5,7 +5,7 @@
 set -euo pipefail
 
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║     🚀 Setup RAG + Agentes + MCP - Tudo local e grátis     ║"
+echo "║      Setup RAG + Agentes + MCP - Tudo local e grátis     ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
 
@@ -13,9 +13,9 @@ echo ""
 echo "[1/5] Criando ambiente virtual Python..."
 if [ ! -d "venv" ]; then
     python3 -m venv venv
-    echo "  ✅ venv criado"
+    echo "   venv criado"
 else
-    echo "  ⏩ venv já existe"
+    echo "  [skip] venv ja existe"
 fi
 
 source venv/bin/activate
@@ -24,43 +24,43 @@ source venv/bin/activate
 echo "[2/5] Instalando dependências..."
 pip install --quiet --upgrade pip
 pip install --quiet -r requirements.txt
-echo "  ✅ Dependências instaladas"
+echo "   Dependências instaladas"
 
 # ─── 3. Ollama ─────────────────────────────────────────────────────────────
 echo "[3/5] Verificando Ollama..."
 if command -v ollama &> /dev/null; then
-    echo "  ✅ Ollama encontrado!"
+    echo "   Ollama encontrado!"
     
-    echo "  ⏳ Baixando modelo de linguagem (llama3.2:3b)..."
+    echo "  Baixando modelo de linguagem (llama3.2:3b)..."
     ollama pull llama3.2:3b 2>/dev/null || true
     
-    echo "  ⏳ Baixando modelo de embeddings (nomic-embed-text)..."
+    echo "  Baixando modelo de embeddings (nomic-embed-text)..."
     ollama pull nomic-embed-text 2>/dev/null || true
     
-    echo "  ✅ Modelos prontos!"
+    echo "  Modelos prontos!"
 else
-    echo "  ⚠️  Ollama não encontrado."
-    echo "  📥 Instale com: curl -fsSL https://ollama.com/install.sh | sh"
+    echo "  Ollama nao encontrado."
+    echo "  Instale com: curl -fsSL https://ollama.com/install.sh | sh"
     echo "  Ou rode com Docker: docker compose up -d ollama"
 fi
 
 # ─── 4. Diretórios ─────────────────────────────────────────────────────────
 echo "[4/5] Criando diretórios de dados..."
 mkdir -p data/chroma
-echo "  ✅ data/chroma criado"
+echo "  data/chroma criado"
 
 # ─── 5. .env ───────────────────────────────────────────────────────────────
 echo "[5/5] Configurando .env..."
 if [ ! -f ".env" ]; then
     cp .env.example .env
-    echo "  ✅ .env criado a partir do .env.example"
+    echo "  .env criado a partir do .env.example"
 else
-    echo "  ⏩ .env já existe"
+    echo "  [skip] .env ja existe"
 fi
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║  ✅ Setup completo!                                         ║"
+echo "║   Setup completo!                                          ║"
 echo "║                                                              ║"
 echo "║  Para rodar a API:                                           ║"
 echo "║    source venv/bin/activate                                  ║"
@@ -71,8 +71,8 @@ echo "║    source venv/bin/activate                                  ║"
 echo "║    python -m app.mcp.server                                  ║"
 echo "║                                                              ║"
 echo "║  Endpoints:                                                  ║"
-echo "║    📄 POST /api/v1/upload  - Upload de documento            ║"
-echo "║    ❓ POST /api/v1/ask     - Pergunta ao RAG                ║"
-echo "║    🤖 POST /api/v1/agent   - Conversa com agente            ║"
-echo "║    ❤️  GET  /api/v1/health  - Health check                  ║"
+echo "║     POST /api/v1/upload  - Upload de documento            ║"
+echo "║     POST /api/v1/ask     - Pergunta ao RAG                ║"
+echo "║     POST /api/v1/agent   - Conversa com agente            ║"
+echo "║      GET  /api/v1/health  - Health check                  ║"
 echo "╚══════════════════════════════════════════════════════════════╝"

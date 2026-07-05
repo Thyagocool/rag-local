@@ -1,15 +1,15 @@
-# 📓 Dia 2 — Streaming no RAG + Limpeza do Código
+#  Dia 2 — Streaming no RAG + Limpeza do Código
 
 > **Data:** 04/07/2026
 > **Branch:** `main`
 
 ---
 
-## 🎯 O que foi feito
+##  O que foi feito
 
 Implementação de streaming token a token no endpoint do RAG (`/ask/stream`) e limpeza geral do código removendo perfumaria desnecessária.
 
-## 🧹 Limpeza do código
+##  Limpeza do código
 
 ### Removido
 
@@ -51,7 +51,7 @@ app/
 
 ---
 
-## 🔥 Streaming no RAG
+##  Streaming no RAG
 
 ### `engine.py` — `ask_stream()`
 
@@ -79,7 +79,7 @@ data: [DONE]
 
 ---
 
-## 📊 Resumo das mudanças
+##  Resumo das mudanças
 
 | Arquivo | Mudança |
 |---------|---------|
@@ -88,12 +88,12 @@ data: [DONE]
 | `app/main.py` | Simplificado (sem lifespan, sem observability) |
 | `app/config.py` | Removido `otlp_endpoint` |
 | `requirements.txt` | Removido structlog, opentelemetry, rich, sentence-transformers, unstructured |
-| `app/observability/` | 🗑️ Removido |
-| `app/memory/` | 🗑️ Removido |
+| `app/observability/` |  Removido |
+| `app/memory/` |  Removido |
 
 ---
 
-## 🧪 Como testar
+##  Como testar
 
 ```bash
 curl -N -X POST http://localhost:8000/api/v1/ask/stream \
@@ -103,7 +103,7 @@ curl -N -X POST http://localhost:8000/api/v1/ask/stream \
 
 ---
 
-## 📌 Observações
+##  Observações
 
 - Código foi enxugado pensando em **manutenibilidade** — cliente precisa entender
 - Remoção de `observability/` e `memory/` reduziu complexidade sem perder funcionalidade
