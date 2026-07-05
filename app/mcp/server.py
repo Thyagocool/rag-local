@@ -13,7 +13,9 @@ from mcp.server import NotificationOptions, Server
 from mcp.server.models import InitializationOptions
 import mcp.server.stdio
 
-from app.rag.ask import ask as rag_ask
+from app.rag.use_cases.ask_use_case import AskUseCase
+
+_ask_uc = AskUseCase()
 
 logger = logging.getLogger(__name__)
 
@@ -54,9 +56,9 @@ async def handle_call_tool(
     if name == "rag-ask":
         question = arguments.get("question", "") if arguments else ""
         if not question:
-            return [types.TextContent(type="text", text=" Pergunta não informada")]
+            return [types.TextContent(type="text", text="Pergunta nao informada")]
 
-        result = rag_ask(question)
+        result = _ask_uc.ask(question)
         return [
             types.TextContent(
                 type="text",

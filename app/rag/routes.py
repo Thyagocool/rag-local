@@ -1,5 +1,6 @@
 """Rotas do RAG — apenas roteamento, logica delegada aos use cases."""
 
+import json
 import tempfile
 from pathlib import Path
 from fastapi import APIRouter, UploadFile, File, HTTPException
@@ -11,17 +12,34 @@ from app.rag.schemas import (
     Source,
     UploadResponse,
 )
-from app.rag.ask import ask, stream_answer
-from app.rag.document import load_document, LOADERS, ingest_documents, clear_all
+from app.rag.use_cases.ask_use_case import AskUseCase
+from app.rag.use_cases.document_use_case import DocumentUseCase
+
+
+ask_uc = AskUseCase()
+document_uc = DocumentUseCase()
 
 router = APIRouter()
+
+
+# ─── Helpers de streaming (presentation) ───────────────────────────────
+
+
+def _stream_answer(question: str):
+    """Converte tokens do RAG em eventos SSE."""
+    for token in ask_uc.ask_stream(question):
+        yield f"data: {json.dumps({'token': token})}\n\n"
+    yield "data: [DONE]\n\n"
+
+
+# ─── Rotas ─────────────────────────────────────────────────────────────
 
 
 @router.post("/ask", response_model=AskResponse)
 def ask_rag(payload: AskRequest):
     """Faz uma pergunta ao RAG com base nos documentos indexados."""
     try:
-        result = ask(payload.question)
+        result = ask_uc.ask(payload.question)
         return AskResponse(
             answer=result["answer"],
             sources=[Source(**s) for s in result["sources"]],
@@ -34,7 +52,7 @@ def ask_rag(payload: AskRequest):
 def ask_rag_stream(payload: AskRequest):
     """Faz uma pergunta ao RAG com resposta em streaming (SSE)."""
     return StreamingResponse(
-        stream_answer(payload.question),
+        _stream_answer(payload.question),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -50,10 +68,10 @@ async def upload_file(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Filename nao informado")
 
     ext = Path(file.filename).suffix.lower()
-    if ext not in LOADERS:
+    if ext not in document_uc.LOADERS:
         raise HTTPException(
             status_code=400,
-            detail=f"Formato nao suportado. Use: {', '.join(LOADERS.keys())}",
+            detail=f"Formato nao suportado. Use: {', '.join(document_uc.LOADERS.keys())}",
         )
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
@@ -62,12 +80,14 @@ async def upload_file(file: UploadFile = File(...)):
         tmp_path = tmp.name
 
     try:
-        docs = load_document(Path(tmp_path))
-        ingest_documents(docs)
+        docs = document_uc.load_document(Path(tmp_path))
+        document_uc.ingest_documents(docs)
         return UploadResponse(
             message=f"{file.filename} indexado com sucesso!",
             documents_processed=len(docs),
         )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     finally:
         Path(tmp_path).unlink(missing_ok=True)
 
@@ -75,5 +95,5 @@ async def upload_file(file: UploadFile = File(...)):
 @router.delete("/clear")
 def clear_vector_store():
     """Remove todos os documentos do banco vetorial."""
-    clear_all()
+    document_uc.clear_all()
     return {"message": "Banco vetorial limpo!"}
