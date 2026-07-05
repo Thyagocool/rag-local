@@ -1,11 +1,18 @@
 """Adapter do ChromaDB — implementa VectorStoreAdapter."""
 
-import chromadb
 from langchain_chroma import Chroma
 from app.config import settings
 from app.rag.embeddings import get_embeddings
 from app.rag.vector_store.protocol import VectorStoreAdapter
+import chromadb
+from chromadb.config import Settings as ChromaSettings
 import os
+
+# Desliga telemetria do ChromaDB — o posthog instalado tem API
+# incompativel com a versao que o chromadb espera.
+_chroma_settings = ChromaSettings(
+    anonymized_telemetry=False,
+)
 
 
 class ChromaAdapter(VectorStoreAdapter):
@@ -15,10 +22,15 @@ class ChromaAdapter(VectorStoreAdapter):
         persist_dir = settings.chroma_persist_dir
         os.makedirs(persist_dir, exist_ok=True)
 
+        self._client = chromadb.PersistentClient(
+            path=persist_dir,
+            settings=_chroma_settings,
+        )
         self._store = Chroma(
             collection_name=settings.collection_name,
             embedding_function=get_embeddings(),
             persist_directory=persist_dir,
+            client=self._client,
         )
 
     def as_retriever(self, **kwargs):
@@ -33,5 +45,4 @@ class ChromaAdapter(VectorStoreAdapter):
             self._store.delete(ids)
 
     def list_collections(self) -> list[str]:
-        client = chromadb.PersistentClient(path=settings.chroma_persist_dir)
-        return [c.name for c in client.list_collections()]
+        return [c.name for c in self._client.list_collections()]

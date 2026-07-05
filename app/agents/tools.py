@@ -1,11 +1,11 @@
 """Ferramentas que o agente pode usar."""
 
+from datetime import datetime
 from langchain_core.tools import tool
 from app.rag.use_cases.ask_use_case import AskUseCase
+from app.agents.web_search import search_web
 
 _ask_uc = AskUseCase()
-from datetime import datetime
-import json
 
 
 @tool
@@ -42,6 +42,13 @@ def calculate(expression: str) -> str:
 
 
 @tool
+def search_web_tool(query: str) -> str:
+    """Pesquisa na internet em tempo real. Use para perguntas sobre
+    noticias atuais, eventos recentes, ou informacoes que mudam com frequencia."""
+    return search_web(query)
+
+
+@tool
 def list_available_tools() -> str:
     """Lista todas as ferramentas disponíveis para o agente."""
     return """
@@ -49,8 +56,15 @@ Ferramentas disponiveis:
 1. search_documents - Busca documentos no RAG
 2. get_current_time - Mostra data/hora atual
 3. calculate - Calcula expressoes matematicas
-4. list_available_tools - Lista as ferramentas
+4. search_web_tool - Pesquisa na internet
+5. list_available_tools - Lista as ferramentas
 """
 
 
-rag_tools = [search_documents, get_current_time, calculate, list_available_tools]
+rag_tools = [
+    search_documents,
+    get_current_time,
+    calculate,
+    search_web_tool,
+    list_available_tools,
+]

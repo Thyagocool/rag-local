@@ -63,15 +63,22 @@ def ask_rag_stream(payload: AskRequest):
 
 @router.post("/upload", response_model=UploadResponse)
 async def upload_file(file: UploadFile = File(...)):
-    """Faz upload de um documento (PDF, TXT, MD, DOCX) para indexar no RAG."""
+    """Faz upload de um documento para indexar no RAG.
+
+    Formatos suportados: PDF, TXT, MD, DOCX, HTML, CSV, JSON,
+    Python, JS, TS, SQL, YAML, XML.
+    """
     if file.filename is None:
         raise HTTPException(status_code=400, detail="Filename nao informado")
 
     ext = Path(file.filename).suffix.lower()
-    if ext not in document_uc.LOADERS:
+    if ext not in document_uc.SUPPORTED_EXTENSIONS:
         raise HTTPException(
             status_code=400,
-            detail=f"Formato nao suportado. Use: {', '.join(document_uc.LOADERS.keys())}",
+            detail=(
+                f"Formato nao suportado: {ext}. "
+                f"Use: {', '.join(sorted(document_uc.SUPPORTED_EXTENSIONS))}"
+            ),
         )
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
@@ -80,11 +87,11 @@ async def upload_file(file: UploadFile = File(...)):
         tmp_path = tmp.name
 
     try:
-        docs = document_uc.load_document(Path(tmp_path))
-        document_uc.ingest_documents(docs)
+        chunks = document_uc.load_and_chunk(Path(tmp_path))
+        document_uc.ingest_documents(chunks)
         return UploadResponse(
             message=f"{file.filename} indexado com sucesso!",
-            documents_processed=len(docs),
+            documents_processed=len(chunks),
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

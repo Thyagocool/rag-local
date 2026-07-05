@@ -77,7 +77,7 @@ Você pergunta →  "A" →  "temperatura" →  "máxima" →  "é" →  "85°C"
 
 ---
 
-##  Dia 3 — Streaming no Agente (o funcionário esperto)
+##  Dia 3 — Streaming no Agente (o funcionario esperto)
 
 No Dia 1 e 2, o sistema só respondia perguntas com base nos documentos que você subiu. Ele é tipo um **atendente de livraria** que só sabe dos livros que tem na loja.
 
@@ -111,35 +111,129 @@ Você: "Quanto é 150°F em °C?"
 
 ---
 
+##  Dia 4 — O cerebro que entende livros completos
+
+Antes, quando voce subia um documento, ele era guardado **inteiro**. Mas se o documento tivesse 100 paginas, o sistema nao conseguia encontrar a informacao com precisao.
+
+Agora, o sistema **picota o documento em pedacos menores** (chunks) de forma inteligente:
+
+### Estrategias de chunking
+
+| Estrategia | Funciona assim |
+|------------|----------------|
+| **Recursiva** | Quebra por paragrafos, frases e palavras — funciona pra qualquer texto |
+| **Markdown** | Respeita os titulos (##, ###) do documento — ideal pra arquivos .md |
+| **Codigo** | Quebra respeitando funcoes e classes — pra arquivos .py, .js, etc. |
+| **Semantica** | (em breve) Vai juntar frases que falam do mesmo assunto |
+
+### Mais formatos
+
+Antes so aceitava PDF, TXT, MD e DOCX. Agora aceita **15 formatos**:
+
+```
+PDF, TXT, MD, DOCX, HTML, CSV, JSON,
+Python, JavaScript, TypeScript, SQL,
+YAML, XML, HTM
+```
+
+---
+
+##  Dia 5 — O revisor que melhora as respostas
+
+Quando voce pergunta algo, o sistema busca os pedacos mais relevantes. Mas as vezes um pedaco usa as mesmas palavras mas nao responde a sua pergunta.
+
+O **reranking** resolve isso:
+
+```
+SEM RERANKING:
+   Busca -> [doc A, doc B, doc C, doc D]
+           Resposta pode usar doc irrelevante
+
+COM RERANKING:
+   Busca -> [doc A, doc B, ..., doc J]  (busca 10)
+        -> Re-ordenados por relevancia
+        -> [doc G, doc A, doc D, doc F]  (os 4 melhores)
+        -> Resposta mais precisa!
+```
+
+E como ter um **revisor** que le os 10 pedacos encontrados e seleciona so os 4 que realmente respondem a sua pergunta.
+
+---
+
+##  Dia 6 — O agente que pesquisa na internet
+
+Antes, o agente so sabia o que estava nos seus documentos. Tipo um funcionario que so conhece os livros da estante.
+
+Agora ele tambem pode **pesquisar na internet**! Ele usa o DuckDuckGo (igual voce usar o Google) pra buscar noticias, previsao do tempo, cotacoes, etc.
+
+### Exemplo:
+
+```
+Voce: "Qual a previsao do tempo hoje?"
+
+Agente:
+  1. Pesquisa na internet -> "previsao do tempo hoje"
+  2. Le os resultados
+  3. Responde: "A previsao e de 28 C com pancadas de chuva a tarde"
+
+Voce: "O que diz o manual sobre temperatura maxima?"
+
+Agente:
+  1. Busca nos seus documentos -> acha o trecho do manual
+  2. Responde: "O manual informa que a temperatura maxima e 85 C"
+```
+
+O melhor: ele decide **sozinho** se precisa usar a internet ou consultar seus documentos!
+
+---
+
 ##  Resumo visual
 
 ```
  ADICIONA DOCUMENTOS
         ↓
 ┌─────────────────────────────┐
-│      BANCO DE MEMÓRIA       │  ← ChromaDB (arquivo no PC)
+│      BANCO DE MEMORIA       │  <- ChromaDB (arquivo no PC)
 │   (onde os docs ficam)      │
 └──────────┬──────────────────┘
            ↓
-PERGUNTA → ┌─────────────────────┐ → RESPOSTA
-           │  RAG (Dia 1)        │
-           │  • Busca nos docs    │  Resposta completa
-           │  • Pergunta ao robô  │
-           └──────────┬───────────┘
+PERGUNTA -> +---------------------+ -> RESPOSTA
+           |  RAG (Dia 1)        |
+           |  Busca nos docs     |  Resposta completa
+           |  Pergunta ao robo   |
+           +----------+----------+
                       ↓
-           ┌─────────────────────┐ → Palavra por palavra
-           │  STREAMING (Dia 2)  │    (como digitação)
-           │  • Responde em tempo│
-           │    real, palavra por│
-           │    palavra          │
-           └──────────┬───────────┘
+           +---------------------+ -> Palavra por palavra
+           |  STREAMING (Dia 2)  |    (como digitacao)
+           |  Responde em tempo  |
+           |  real, palavra por  |
+           |  palavra            |
+           +----------+----------+
                       ↓
-           ┌─────────────────────┐ → Palavras + ferramentas
-           │  AGENTE (Dia 3)     │    em tempo real
-           │  • Usa ferramentas  │
-           │  • Calcula, busca,  │
-           │    responde         │
-           └─────────────────────┘
+           +---------------------+ -> Palavras + ferramentas
+           |  AGENTE (Dia 3)     |    em tempo real
+           |  Usa ferramentas    |
+           |  Calcula, busca,    |
+           |  responde           |
+           +----------+----------+
+                      ↓
+           +---------------------+
+           |  CHUNKING (Dia 4)   |  Documentos picados
+           |  Divide em pedacos  |  em pedacos inteligentes
+           |  15 formatos        |
+           +----------+----------+
+                      ↓
+           +---------------------+
+           |  RERANKING (Dia 5)  |  Busca mais, filtra
+           |  Re-ordena docs     |  os melhores
+           |  Mais relevancia    |
+           +----------+----------+
+                      ↓
+           +---------------------+
+           |  WEB SEARCH (Dia 6) |  Agente pesquisa
+           |  Internet real      |  na internet
+           |  DuckDuckGo gratis  |
+           +---------------------+
 ```
 
 ---
@@ -151,7 +245,8 @@ PERGUNTA → ┌─────────────────────�
 curl -X POST http://localhost:8000/api/v1/upload \
   -F "file=@manual.pdf"
 ```
-Manda o arquivo pro sistema ler.
+Manda o arquivo pro sistema ler. Aceita PDF, TXT, MD, DOCX, HTML, CSV,
+JSON, Python, JavaScript, TypeScript, SQL, YAML, XML.
 
 ### Perguntar normal
 ```bash

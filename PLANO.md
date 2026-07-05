@@ -27,21 +27,19 @@
 ### 2. App (`app/`)
 | Módulo | Arquivos | O que faz |
 |--------|----------|-----------|
-| `config.py` | 1 | Settings com Pydantic (ollama, chroma, debug, etc.) |
+| `config.py` | 1 | Settings com Pydantic (ollama, chroma, reranking, agente, debug, etc.) |
 | `main.py` | 1 | FastAPI com lifespan, CORS, router |
 | **`api/`** | `routes.py`, `schemas.py` | Rotas REST (/ask, /upload, /agent, /health, /clear) + schemas Pydantic |
-| **`rag/`** | `embeddings.py`, `vector_store/` | Embeddings via Ollama, ChromaDB persistente (adapter c/ factory), chain de retrieval RAG |
-| **`agents/`** | `agent.py`, `tools.py` | LangGraph com grafo (agent -> tools -> agent), 4 tools |
+| **`rag/`** | `embeddings.py`, `vector_store/`, `chunking/`, `reranking/`, `loaders.py` | Embeddings via Ollama, ChromaDB persistente (adapter c/ factory), chunking inteligente (4 estrategias), reranking via cross-encoder, loaders pra 15 formatos |
+| **`agents/`** | `agent.py`, `tools.py`, `web_search.py` | LangGraph com grafo (agent -> tools -> agent), 5 tools (agora com busca web via DuckDuckGo) |
 | **`mcp/`** | `server.py` | Servidor MCP via stdio (expõe rag-ask e rag-status) |
-| **`memory/`** | `memory.py` | Checkpointer SQLite + in-memory |
-| **`observability/`** | `logging.py` | structlog colorido (dev) / JSON (prod) + OpenTelemetry |
 
 ### 3. Endpoints da API
 | Método | Rota | Descrição |
 |--------|------|-----------|
 | `POST` | `/api/v1/ask` | Pergunta ao RAG (retorna resposta + fontes) |
 | `POST` | `/api/v1/ask/stream` | Pergunta ao RAG com streaming (SSE) |
-| `POST` | `/api/v1/upload` | Upload de documento (PDF, TXT, MD, DOCX) |
+| `POST` | `/api/v1/upload` | Upload de documento (PDF, TXT, MD, DOCX, HTML, CSV, JSON, PY, JS, TS, SQL, YAML, XML) |
 | `DELETE` | `/api/v1/clear` | Limpa o banco vetorial |
 | `POST` | `/api/v1/agent` | Conversa com o agente (RAG + tools + memória) |
 | `POST` | `/api/v1/agent/stream` | Conversa com o agente com streaming (SSE) |
@@ -51,6 +49,7 @@
 - `search_documents` — busca no RAG
 - `get_current_time` — data/hora atual
 - `calculate` — expressões matemáticas (eval seguro)
+- `search_web_tool` — pesquisa na internet (DuckDuckGo, gratis, sem API key)
 - `list_available_tools` — auto-descrição
 
 ### 5. MCP Server
@@ -58,10 +57,21 @@
 - Ferramentas expostas: `rag-ask`, `rag-status`
 - Compatível com Claude Desktop, Cline, etc.
 
-### 6. Correções aplicadas (Dia 1)
-- `observability/logging.py` — structlog configurado corretamente (PrintLogger sem `filter_by_level`/`add_logger_name`)
-- `main.py` — f-string no lugar de printf-style (%s)
-- `docker-compose.yml` — `OLLAMA_HOST` adicionado ao container `ollama-init` pra resolver comunicação entre containers
+### 6. Chunking esperto (Dia 4)
+- 4 estrategias: Recursive, Markdown, Code, Semantic (placeholder)
+- Factory em `app/rag/chunking/` com DI no DocumentUseCase
+- Loaders centralizados em `app/rag/loaders.py` — 15 extensoes suportadas
+- Rota de upload aceita todos os novos formatos
+
+### 7. Reranking (Dia 5)
+- Cross-encoder `ms-marco-MiniLM-L-2-v2` (~80MB, CPU)
+- Quando ativo: busca 10 docs, re-ordena por relevancia, retorna top 4
+- Configuravel via env var `RAG_RERANKING_ENABLED`
+
+### 8. Web Search no Agente (Dia 6)
+- Tool `search_web_tool` via DuckDuckGo (ddgs)
+- 100% gratuito, sem API key
+- Integrado ao LangGraph como as demais tools
 
 ---
 
@@ -71,9 +81,9 @@
 Dia 1  ─  Review + alinhamento + projeto rodando + RAG funcional
 Dia 2  ─  Streaming no RAG (resposta token a token via SSE) ← FEITO
 Dia 3  ─  Streaming no Agente (LangGraph + SSE) ← FEITO
-Dia 4  ─ ⏩ Chunking esperto + mais formatos de documento ← PRÓXIMO
-Dia 5  ─ Reranking (melhorar qualidade das respostas)
-Dia 6  ─ Web Search Tool (agente pesquisar na internet)
+Dia 4  ─  Chunking esperto + mais formatos de documento ← FEITO
+Dia 5  ─  Reranking (melhorar qualidade das respostas) ← FEITO
+Dia 6  ─  Web Search Tool (agente pesquisar na internet) ← FEITO
 Dia 7  ─ MCP via SSE (além de stdio, expor via HTTP)
 Dia 8  ─ Frontend básico (Streamlit ou Next.js)
 Dia 9  ─ Testes unitários e de integração
@@ -172,6 +182,24 @@ curl -N -X POST http://localhost:8000/api/v1/agent/stream \
 -  `app/agents/agent.py` → `run_agent_stream()` assíncrono
 -  `POST /api/v1/agent/stream` → SSE com tokens, tool_calls, tool_results
 -  Criação de `docs/` com descritivos diários
+
+### Dia 4 (05/07) — Chunking esperto + mais formatos
+-  `app/rag/chunking/` com 4 estrategias (Recursive, Markdown, Code, Semantic)
+-  `app/rag/loaders.py` — 15 extensoes de documento suportadas
+-  DocumentUseCase com pipeline load -> chunk -> ingest
+-  `docs/dia-4-chunking-esperto.md`
+
+### Dia 5 (05/07) — Reranking
+-  `app/rag/reranking/reranker.py` — CrossEncoder (ms-marco-MiniLM-L-2-v2)
+-  Integrado ao AskUseCase: busca 10, re-ordena, top 4
+-  Configuravel via env var `RAG_RERANKING_ENABLED`
+-  `docs/dia-5-reranking.md`
+
+### Dia 6 (05/07) — Web Search no Agente
+-  `app/agents/web_search.py` — DuckDuckGo search (ddgs)
+-  Tool `search_web_tool` registrada no LangGraph
+-  Agora sao 5 tools disponiveis
+-  `docs/dia-6-web-search.md`
 
 ### Setup atual
 - **API:** rodando local via `uvicorn --reload`

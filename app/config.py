@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     debug: bool = True
 
+    # --- Reranking ---
+    rag_reranking_enabled: bool = True
+    rag_reranking_top_k: int = 4
+
     # --- Agentes ---
     max_tool_calls: int = 5
 
