@@ -184,3 +184,9 @@ def run_agent(message: str, thread_id: str = "default") -> dict:
         "thread_id": thread_id,
         "steps": steps_log,
     }
+
+
+async def stream_agent_events(message: str, thread_id: str):
+    """Transforma eventos do agente em eventos SSE."""
+    async for event in run_agent_stream(message, thread_id):
+        yield f"data: {json.dumps(event)}\n\n"

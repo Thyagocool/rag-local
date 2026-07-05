@@ -1,16 +1,52 @@
-"""Motor RAG completo: ingestão, busca e geração aumentada."""
+"""Motor RAG completo: ingestão, busca, geração aumentada e helpers."""
 
+import json
+import tempfile
+from pathlib import Path
 from langchain_ollama import ChatOllama
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.documents import Document
+from langchain_community.document_loaders import (
+    PyPDFLoader,
+    TextLoader,
+    Docx2txtLoader,
+)
+from fastapi import HTTPException
 from app.config import settings
 from app.rag.vectorstore import get_vector_store
 from app.rag.embeddings import get_embeddings
 import logging
 
 logger = logging.getLogger(__name__)
+
+# --- Helpers de upload ---
+
+LOADERS = {
+    ".pdf": PyPDFLoader,
+    ".txt": TextLoader,
+    ".md": TextLoader,
+    ".docx": Docx2txtLoader,
+}
+
+
+def load_document(file_path: Path) -> list[Document]:
+    """Carrega um documento do disco usando o loader adequado para extensao."""
+    ext = file_path.suffix.lower()
+    loader_cls = LOADERS.get(ext)
+    if not loader_cls:
+        raise HTTPException(status_code=400, detail=f"Formato nao suportado: {ext}")
+    loader = loader_cls(str(file_path))
+    return loader.load()
+
+
+def stream_answer(question: str):
+    """Faz pergunta ao RAG e retorna generator de eventos SSE (token a token)."""
+    for token in ask_stream(question):
+        yield f"data: {json.dumps({'token': token})}\n\n"
+    yield "data: [DONE]\n\n"
+
 
 # --- Prompts ---
 

@@ -1,16 +1,9 @@
-"""Rotas do RAG — perguntar, fazer upload e limpar documentos."""
+"""Rotas do RAG — apenas roteamento, logica delegada ao engine."""
 
-import json
 import tempfile
 from pathlib import Path
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
-from langchain_core.documents import Document
-from langchain_community.document_loaders import (
-    PyPDFLoader,
-    TextLoader,
-    Docx2txtLoader,
-)
 
 from app.api.schemas import (
     AskRequest,
@@ -18,25 +11,16 @@ from app.api.schemas import (
     Source,
     UploadResponse,
 )
-from app.rag.engine import ask, ask_stream, ingest_documents, clear_all
+from app.rag.engine import (
+    ask,
+    stream_answer,
+    load_document,
+    LOADERS,
+    ingest_documents,
+    clear_all,
+)
 
 router = APIRouter()
-
-LOADERS = {
-    ".pdf": PyPDFLoader,
-    ".txt": TextLoader,
-    ".md": TextLoader,
-    ".docx": Docx2txtLoader,
-}
-
-
-def _load_document(file_path: Path) -> list[Document]:
-    ext = file_path.suffix.lower()
-    loader_cls = LOADERS.get(ext)
-    if not loader_cls:
-        raise HTTPException(status_code=400, detail=f"Formato nao suportado: {ext}")
-    loader = loader_cls(str(file_path))
-    return loader.load()
 
 
 @router.post("/ask", response_model=AskResponse)
@@ -56,20 +40,13 @@ def ask_rag(payload: AskRequest):
 def ask_rag_stream(payload: AskRequest):
     """Faz uma pergunta ao RAG com resposta em streaming (SSE)."""
     return StreamingResponse(
-        _stream_answer(payload.question),
+        stream_answer(payload.question),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",
         },
     )
-
-
-def _stream_answer(question: str):
-    """Transforma tokens do RAG em eventos SSE."""
-    for token in ask_stream(question):
-        yield f"data: {json.dumps({'token': token})}\n\n"
-    yield "data: [DONE]\n\n"
 
 
 @router.post("/upload", response_model=UploadResponse)
@@ -91,7 +68,7 @@ async def upload_file(file: UploadFile = File(...)):
         tmp_path = tmp.name
 
     try:
-        docs = _load_document(Path(tmp_path))
+        docs = load_document(Path(tmp_path))
         ingest_documents(docs)
         return UploadResponse(
             message=f"{file.filename} indexado com sucesso!",
