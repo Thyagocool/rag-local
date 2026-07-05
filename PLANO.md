@@ -40,9 +40,11 @@
 | Método | Rota | Descrição |
 |--------|------|-----------|
 | `POST` | `/api/v1/ask` | Pergunta ao RAG (retorna resposta + fontes) |
+| `POST` | `/api/v1/ask/stream` | Pergunta ao RAG com streaming (SSE) |
 | `POST` | `/api/v1/upload` | Upload de documento (PDF, TXT, MD, DOCX) |
 | `DELETE` | `/api/v1/clear` | Limpa o banco vetorial |
 | `POST` | `/api/v1/agent` | Conversa com o agente (RAG + tools + memória) |
+| `POST` | `/api/v1/agent/stream` | Conversa com o agente com streaming (SSE) |
 | `GET` | `/api/v1/health` | Health check + lista coleções |
 
 ### 4. Tools do Agente (LangGraph)
@@ -67,9 +69,9 @@
 
 ```
 Dia 1  ─ ✅ Review + alinhamento + projeto rodando + RAG funcional
-Dia 2  ─ ⏩ Streaming no RAG (resposta token a token via SSE) ← PRÓXIMO
-Dia 3  ─ Streaming no Agente (LangGraph já suporta nativamente)
-Dia 4  ─ Chunking esperto + mais formatos de documento
+Dia 2  ─ ✅ Streaming no RAG (resposta token a token via SSE) ← FEITO
+Dia 3  ─ ✅ Streaming no Agente (LangGraph + SSE) ← FEITO
+Dia 4  ─ ⏩ Chunking esperto + mais formatos de documento ← PRÓXIMO
 Dia 5  ─ Reranking (melhorar qualidade das respostas)
 Dia 6  ─ Web Search Tool (agente pesquisar na internet)
 Dia 7  ─ MCP via SSE (além de stdio, expor via HTTP)
@@ -125,36 +127,51 @@ curl -X POST http://localhost:8000/api/v1/agent \
 
 ---
 
-## 💡 PRÓXIMO PASSO (DIA 2)
+## ✅ DIAS 2 e 3 — Streaming (RAG + Agente) — CONCLUÍDOS
 
-**Implementar Streaming no RAG** — fazer o endpoint `/ask` responder token a token usando SSE (Server-Sent Events).
+**Streaming no RAG (`/ask/stream`)** — endpoint que responde token a token via SSE.
+**Streaming no Agente (`/agent/stream`)** — endpoint que streama tokens, tool_calls e tool_results.
 
-### Por que streaming?
-- Experiência muito mais profissional
-- Impressiona em entrevistas
-- Necessário pra chatbots de verdade
-- O LangChain já tem suporte nativo via `stream()` no ChatOllama
+### Arquivos criados/modificados
+- `app/rag/engine.py` → `ask_stream()` — generator de tokens do RAG
+- `app/api/routes.py` → endpoints `/ask/stream` e `/agent/stream`
+- `app/agents/agent.py` → `run_agent_stream()` — generator assíncrono de eventos do agente
+- `docs/dia-2-streaming-rag.md` — descritivo do Dia 2
+- `docs/dia-3-streaming-agente.md` — descritivo do Dia 3
 
-### Arquivos que vão mudar
-- `app/api/routes.py` — novo endpoint `/ask/stream`
-- `app/api/schemas.py` — novo schema pra streaming (ou reuso)
-- `app/rag/engine.py` — função `ask_stream()` que faz yield dos tokens
+### Como testar
+```bash
+# Streaming RAG
+curl -N -X POST http://localhost:8000/api/v1/ask/stream \
+  -H "Content-Type: application/json" \
+  -d '{"question": "O que diz o documento?"}'
+
+# Streaming Agente
+curl -N -X POST http://localhost:8000/api/v1/agent/stream \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Resuma os documentos", "thread_id": "teste"}'
+```
 
 ---
 
-## 📋 RESUMO — DIA 1 (30/06)
+## 📋 HISTÓRICO DE DIAS
 
-### O que foi feito
-- ✅ Projeto revisado e analisado (estrutura completa, 8 módulos)
-- ✅ `README.md` criado com documentação completa
-- ✅ `PLANO.md` criado com roadmap de 15 dias
-- ✅ Dependências instaladas no venv
-- ✅ Bug do structlog corrigido (PrintLogger vs stdlib)
-- ✅ Bug do `%s` no log corrigido (f-string)
-- ✅ Bug do `OLLAMA_HOST` no `ollama-init` corrigido
-- ✅ Ollama instalado via Docker + modelos baixados (llama3.2:3b, nomic-embed-text)
+### Dia 1 (30/06) — Setup + RAG funcional
+- ✅ Projeto revisado e estruturado (8 módulos)
+- ✅ `README.md` + `PLANO.md`
+- ✅ Ollama via Docker + modelos baixados
 - ✅ API rodando com `uvicorn --reload`
-- ✅ RAG testado e respondendo pelo Swagger
+- ✅ RAG respondendo via Swagger
+
+### Dia 2 (04/07) — Streaming no RAG
+- ✅ `app/rag/engine.py` → `ask_stream()` com generator de tokens
+- ✅ `POST /api/v1/ask/stream` → SSE token a token
+- ✅ Limpeza do código: removido observability/ e memory/
+
+### Dia 3 (04/07) — Streaming no Agente
+- ✅ `app/agents/agent.py` → `run_agent_stream()` assíncrono
+- ✅ `POST /api/v1/agent/stream` → SSE com tokens, tool_calls, tool_results
+- ✅ Criação de `docs/` com descritivos diários
 
 ### Setup atual
 - **API:** rodando local via `uvicorn --reload`
@@ -162,7 +179,7 @@ curl -X POST http://localhost:8000/api/v1/agent \
 - **ChromaDB:** persistente em `./data/chroma`
 - **Portas:** API `:8000`, Ollama `:11434`
 
-### Pra subir amanhã
+### Pra subir
 ```bash
 docker compose up -d ollama
 source venv/bin/activate
