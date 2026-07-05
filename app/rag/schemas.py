@@ -1,0 +1,20 @@
+from pydantic import BaseModel
+
+
+class Source(BaseModel):
+    content: str
+    metadata: dict
+
+
+class AskResponse(BaseModel):
+    answer: str
+    sources: list[Source]
+
+
+class AskRequest(BaseModel):
+    question: str
+
+
+class UploadResponse(BaseModel):
+    message: str
+    documents_processed: int

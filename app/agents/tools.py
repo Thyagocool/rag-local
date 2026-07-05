@@ -1,7 +1,9 @@
 """Ferramentas que o agente pode usar."""
 
 from langchain_core.tools import tool
-from app.rag.engine import ask as rag_ask
+from app.rag.use_cases.ask_use_case import AskUseCase
+
+_ask_uc = AskUseCase()
 from datetime import datetime
 import json
 
@@ -10,7 +12,7 @@ import json
 def search_documents(query: str) -> str:
     """Busca documentos indexados no RAG e retorna respostas com base neles.
     Use para perguntas sobre os documentos que foram enviados."""
-    result = rag_ask(query)
+    result = _ask_uc.ask(query)
     sources = "\n".join(
         f"  - {s['content'][:200]}..."
         for s in result["sources"]
