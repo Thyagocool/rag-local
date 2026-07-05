@@ -7,7 +7,7 @@ from langchain_community.document_loaders import (
     TextLoader,
     Docx2txtLoader,
 )
-from app.rag.vectorstore import get_vector_store
+from app.rag.vector_store import VectorStoreAdapter, get_vector_store_adapter
 import logging
 
 logger = logging.getLogger(__name__)
@@ -23,6 +23,14 @@ class DocumentUseCase:
         ".docx": Docx2txtLoader,
     }
 
+    def __init__(self, vector_store: VectorStoreAdapter | None = None):
+        self._vector_store = vector_store
+
+    def _get_store(self) -> VectorStoreAdapter:
+        if self._vector_store is None:
+            self._vector_store = get_vector_store_adapter()
+        return self._vector_store
+
     def load_document(self, file_path: Path) -> list[Document]:
         """Carrega um documento do disco usando o loader adequado."""
         ext = file_path.suffix.lower()
@@ -34,14 +42,12 @@ class DocumentUseCase:
 
     def ingest_documents(self, docs: list[Document]):
         """Ingere documentos no banco vetorial."""
-        vector_store = get_vector_store()
-        vector_store.add_documents(docs)
+        store = self._get_store()
+        store.add_documents(docs)
         logger.info(f"{len(docs)} documento(s) ingerido(s)")
 
     def clear_all(self):
         """Limpa todo o banco vetorial."""
-        vector_store = get_vector_store()
-        ids = vector_store.get()["ids"]
-        if ids:
-            vector_store.delete(ids)
-            logger.info(f"{len(ids)} documento(s) removido(s)")
+        store = self._get_store()
+        store.clear_all()
+        logger.info("Banco vetorial limpo")

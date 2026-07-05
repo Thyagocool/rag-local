@@ -2,7 +2,7 @@
 
 from langchain_core.prompts import ChatPromptTemplate
 from app.infra.llm import LLMFactory
-from app.rag.vectorstore import get_vector_store
+from app.rag.vector_store import VectorStoreAdapter, get_vector_store_adapter
 import logging
 
 logger = logging.getLogger(__name__)
@@ -27,18 +27,24 @@ RETRIEVAL_PROMPT = ChatPromptTemplate.from_messages([
 class AskUseCase:
     """Pergunta ao RAG — resposta completa ou streaming token a token."""
 
-    def __init__(self):
+    def __init__(self, vector_store: VectorStoreAdapter | None = None):
         self._llm = None
+        self._vector_store = vector_store
 
     def _get_llm(self):
         if self._llm is None:
             self._llm = LLMFactory.get_llm(temperature=0.3)
         return self._llm
 
+    def _get_store(self) -> VectorStoreAdapter:
+        if self._vector_store is None:
+            self._vector_store = get_vector_store_adapter()
+        return self._vector_store
+
     def _retrieve(self, question: str):
         """Busca documentos relevantes e monta o contexto."""
-        vector_store = get_vector_store()
-        retriever = vector_store.as_retriever(search_kwargs={"k": 4})
+        store = self._get_store()
+        retriever = store.as_retriever(search_kwargs={"k": 4})
         docs = retriever.invoke(question)
         context = "\n\n".join(doc.page_content for doc in docs)
         return docs, context
