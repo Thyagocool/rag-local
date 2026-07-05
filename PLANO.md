@@ -30,7 +30,7 @@
 | `config.py` | 1 | Settings com Pydantic (ollama, chroma, debug, etc.) |
 | `main.py` | 1 | FastAPI com lifespan, CORS, router |
 | **`api/`** | `routes.py`, `schemas.py` | Rotas REST (/ask, /upload, /agent, /health, /clear) + schemas Pydantic |
-| **`rag/`** | `embeddings.py`, `vectorstore.py`, `engine.py` | Embeddings via Ollama, ChromaDB persistente, chain de retrieval RAG |
+| **`rag/`** | `embeddings.py`, `vector_store/` | Embeddings via Ollama, ChromaDB persistente (adapter c/ factory), chain de retrieval RAG |
 | **`agents/`** | `agent.py`, `tools.py` | LangGraph com grafo (agent -> tools -> agent), 4 tools |
 | **`mcp/`** | `server.py` | Servidor MCP via stdio (expõe rag-ask e rag-status) |
 | **`memory/`** | `memory.py` | Checkpointer SQLite + in-memory |
