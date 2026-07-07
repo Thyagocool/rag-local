@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     tracing_otlp_endpoint: Optional[str] = None
 
     # --- Upload ---
-    max_upload_size_mb: int = 10
+    max_upload_size_mb: int = 50
 
     model_config = {"env_prefix": "RAG_", "env_file": ".env"}
 
