@@ -16,7 +16,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      - RAG_OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - RAG_OLLAMA_BASE_URL=http://172.17.0.1:11434
       - RAG_LLM_MODEL=qwen2:0.5b
       - RAG_EMBEDDING_MODEL=nomic-embed-text
       - RAG_CHROMA_PERSIST_DIR=/data/chroma
