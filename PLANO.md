@@ -130,6 +130,26 @@ Dia 12 ─  LLMOps: tracing com OpenTelemetry                               ✅
 Dia 13 ─  Documentação + README                                           ✅
 Dia 14 ─  Polimento + melhorias finais                                    ✅
 Dia 15 ─  Publicar                                                        ✅
+---
+
+##  ROTEIRO — PRÓXIMOS DIAS
+
+```
+Dia 1  ─  Review + alinhamento + projeto rodando + RAG funcional           ← FEITO
+Dia 2  ─  Streaming no RAG (resposta token a token via SSE)               ← FEITO
+Dia 3  ─  Streaming no Agente (LangGraph + SSE)                           ← FEITO
+Dia 4  ─  Chunking esperto + mais formatos de documento                   ← FEITO
+Dia 5  ─  Reranking (melhorar qualidade das respostas)                    ← FEITO
+Dia 6  ─  Web Search Tool (agente pesquisar na internet)                  ← FEITO
+Dia 7  ─  MCP via SSE (além de stdio, expor via HTTP)                     ← FEITO
+Dia 8  ─  Frontend básico (React + Vite + TypeScript)                     ← FEITO
+Dia 9  ─  Testes unitários e de integração                                ← PENDENTE
+Dia 10 ─  Rate limiting + validações extras                               ← PENDENTE
+Dia 11 ─  Deploy (Docker Compose + Nginx + produção)                      ← FEITO
+Dia 12 ─  LLMOps: tracing com LangSmith / OpenTelemetry
+Dia 13 ─  Documentação + README foda
+Dia 14 ─  Polimento + gravar demo
+Dia 15 ─  Publicar / mostrar pra geral
 ```
 
 ---
