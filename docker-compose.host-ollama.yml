@@ -2,6 +2,9 @@
 # Docker Compose — API + Frontend (Ollama rodando no host)
 # Uso: docker compose -f docker-compose.host-ollama.yml up -d
 # =============================================================================
+# AVISO: usa network_mode: host porque o container precisa acessar o Ollama
+# em localhost:11434. O host.docker.internal não funciona confiavelmente no
+# Linux com redes customizadas do Docker Compose.
 
 services:
   # ─── API (FastAPI + RAG + Agentes + MCP) ─────────────────────────────────
@@ -11,12 +14,9 @@ services:
       dockerfile: Dockerfile
     image: rag-api:latest
     container_name: rag-api
-    ports:
-      - "8000:8000"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    network_mode: host
     environment:
-      - RAG_OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - RAG_OLLAMA_BASE_URL=http://localhost:11434
       - RAG_LLM_MODEL=qwen2:0.5b
       - RAG_EMBEDDING_MODEL=nomic-embed-text
       - RAG_CHROMA_PERSIST_DIR=/data/chroma
@@ -40,8 +40,9 @@ services:
       dockerfile: Dockerfile
     image: rag-frontend:latest
     container_name: rag-frontend
-    ports:
-      - "80:80"
+    network_mode: host
+    volumes:
+      - ./frontend/nginx.host-ollama.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       api:
         condition: service_started
