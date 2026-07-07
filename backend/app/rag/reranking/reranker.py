@@ -1,28 +1,52 @@
 """Reranking de documentos usando cross-encoder.
 
 Melhora a qualidade das respostas re-ordenando os documentos
-recuperados pelo similarity search. O cross-encoder avalia
-a relevancia de cada documento em relacao a pergunta.
+recuperados pelo similarity search.
+
+Nota: requer sentence-transformers (com PyTorch). Se nao estiver
+instalado, o reranking apenas retorna os documentos originais.
 """
 
 import logging
-from sentence_transformers import CrossEncoder
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 # Modelo tiny de cross-encoder (~80MB, roda em CPU)
 DEFAULT_MODEL = "cross-encoder/ms-marco-MiniLM-L-2-v2"
 
-_reranker: CrossEncoder | None = None
+_reranker: Optional[object] = None
 
 
-def get_reranker(model_name: str = DEFAULT_MODEL) -> CrossEncoder:
-    """Retorna instancia do cross-encoder (cacheada)."""
+def _is_available() -> bool:
+    """Verifica se sentence-transformers esta instalado."""
+    try:
+        import sentence_transformers  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+def get_reranker(model_name: str = DEFAULT_MODEL):
+    """Retorna instancia do cross-encoder (cacheada).
+
+    Retorna None se sentence-transformers nao estiver instalado.
+    """
     global _reranker
+    if not _is_available():
+        logger.warning("sentence-transformers nao instalado — reranking desativado")
+        return None
+
     if _reranker is None:
-        logger.info("Carregando reranker: %s...", model_name)
-        _reranker = CrossEncoder(model_name, max_length=512)
-        logger.info("Reranker pronto")
+        try:
+            from sentence_transformers import CrossEncoder
+            logger.info("Carregando reranker: %s...", model_name)
+            _reranker = CrossEncoder(model_name, max_length=512)
+            logger.info("Reranker pronto")
+        except Exception as exc:
+            logger.warning("Falha ao carregar reranker: %s", exc)
+            return None
+
     return _reranker
 
 
@@ -34,6 +58,9 @@ def rerank(
 ) -> list:
     """Re-ordena documentos por relevancia a pergunta.
 
+    Se sentence-transformers nao estiver instalado, retorna
+    os documentos originais sem reordenar.
+
     Args:
         query: Pergunta do usuario.
         documents: Lista de Document do LangChain.
@@ -41,12 +68,18 @@ def rerank(
         model_name: Nome do modelo cross-encoder.
 
     Returns:
-        Lista dos top_k documentos re-ordenados (mais relevante primeiro).
+        Lista dos top_k documentos (re-ordenados se disponivel).
     """
     if not documents:
         return documents
 
     model = get_reranker(model_name)
+    if model is None:
+        logger.debug("Reranking indisponivel — retornando documentos originais")
+        return documents[:top_k]
+
+    from sentence_transformers import CrossEncoder
+    assert isinstance(model, CrossEncoder)
 
     # Prepara pares (pergunta, conteudo) pro cross-encoder
     pairs = [(query, doc.page_content) for doc in documents]

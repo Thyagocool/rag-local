@@ -17,7 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    find /usr/local -name '*.pyc' -delete && \
+    find /usr/local -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
 
 # ─── Stage 2: Runtime (imagem final enxuta) ─────────────────────────────────
 FROM python:3.12-slim
@@ -40,9 +42,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copia dependências compiladas do builder
+# Copia apenas site-packages do builder (sem binarios desnecessarios)
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Cria usuário não-root para segurança
 RUN addgroup --system --gid 1001 app && \
@@ -51,6 +52,10 @@ RUN addgroup --system --gid 1001 app && \
 
 # Copia o código (com ownership pro usuário app)
 COPY --chown=app:app . .
+
+# Remove arquivos desnecessários pra enxugar a imagem
+RUN find /app -name '*.pyc' -delete && \
+    find /app -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
 
 # Expõe a porta da API
 EXPOSE 8000
