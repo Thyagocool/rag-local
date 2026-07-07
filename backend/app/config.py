@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     rag_reranking_top_k: int = 4
 
     # --- Agentes ---
+    agent_model: Optional[str] = None  # fallback pra llm_model se nao definido
     max_tool_calls: int = 5
 
     # --- Tracing / LLMOps (OpenTelemetry) ---

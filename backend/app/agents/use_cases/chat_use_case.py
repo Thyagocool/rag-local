@@ -15,6 +15,7 @@ from langchain_core.messages import (
     ToolMessage,
 )
 from app.infra.llm import LLMFactory
+from app.config import settings
 from app.agents.tools import rag_tools
 import logging
 
@@ -50,7 +51,8 @@ class ChatUseCase:
 
     def _get_llm(self):
         if self._llm is None:
-            self._llm = LLMFactory.get_llm(temperature=0.4)
+            model = settings.agent_model or settings.llm_model
+            self._llm = LLMFactory.get_llm(temperature=0.4, model=model)
         return self._llm
 
     def _get_graph(self):
