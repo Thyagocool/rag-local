@@ -45,4 +45,9 @@ class ChromaAdapter(VectorStoreAdapter):
             self._store.delete(ids)
 
     def list_collections(self) -> list[str]:
-        return [c.name for c in self._client.list_collections()]
+        """Lista as colecoes disponiveis.
+
+        ChromaDB v0.6+ retorna CollectionName (subclasse de str).
+        Acessar .name nesses objetos da erro — usar str() ou manter como esta.
+        """
+        return [str(c) for c in self._client.list_collections()]

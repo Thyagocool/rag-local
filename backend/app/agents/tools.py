@@ -1,5 +1,6 @@
 """Ferramentas que o agente pode usar."""
 
+import math
 from datetime import datetime
 from langchain_core.tools import tool
 from app.rag.use_cases.ask_use_case import AskUseCase
@@ -28,15 +29,23 @@ def get_current_time() -> str:
 
 @tool
 def calculate(expression: str) -> str:
-    """Calcula uma expressão matemática. Ex: '2 + 2', 'sqrt(16)', '3 * 7'."""
+    """Calcula uma expressao matematica. Ex: '2 + 2', 'sqrt(16)', '3 * 7'."""
     try:
-        # Avaliação segura — sem builtins perigosos
         allowed_names = {
             "abs": abs, "round": round, "min": min, "max": max,
             "sum": sum, "pow": pow, "int": int, "float": float,
+            "sqrt": math.sqrt, "log": math.log, "log2": math.log2,
+            "log10": math.log10, "sin": math.sin, "cos": math.cos,
+            "tan": math.tan, "floor": math.floor, "ceil": math.ceil,
+            "pi": math.pi, "e": math.e, "factorial": math.factorial,
         }
-        result = eval(expression, {"__builtins__": {}}, allowed_names)
-        return f"Resultado: {result}"
+        # Permite chamadas como math.sqrt() normalizando
+        expr_normalized = expression.replace("math.", "")
+        result = eval(expr_normalized, {"__builtins__": {}}, allowed_names)
+        # Arredonda floats longos pra 4 casas
+        if isinstance(result, float):
+            result = round(result, 4)
+        return str(result)
     except Exception as e:
         return f"Erro ao calcular: {e}"
 
