@@ -10,7 +10,7 @@
 - **Dev:** Thyago — nível Sênior em backend
 - **Objetivo:** Aprender na prática o ecossistema de Engenharia de IA (RAG, Agentes, MCP, LLMOps)
 - **Projeto:** API completa rodando 100% local (Ollama pra LLM e embeddings), sem custos de API
-- **Status atual:**  RAG respondendo perguntas, API rodando 100%, Ollama via Docker, agente com LangGraph funcional, MCP Server no ar
+- **Status atual:**  RAG + Agente + MCP (stdio + SSE) + Frontend React + Deploy prod-ready
 - **Setup:** API local (`uvicorn --reload`) + Ollama no Docker (`docker compose up -d ollama`)
 
 ---
@@ -18,50 +18,57 @@
 ##  O QUE JÁ ESTÁ PRONTO
 
 ### 1. Infraestrutura
-- `Dockerfile` — multi-stage build com Python 3.12-slim
-- `docker-compose.yml` — API + Ollama + ChromaDB + Init (com healthcheck)
-- `setup.sh` — script automático de setup (venv, deps, modelos, diretórios)
-- `requirements.txt` — dependências organizadas por categoria
-- `.env.example` — configs via env vars com prefixo `RAG_`
+- `backend/Dockerfile` — multi-stage build + non-root user + healthcheck
+- `backend/.dockerignore` — build context otimizado
+- `backend/docker-compose.yml` — API + Ollama + ChromaDB + Init
+- `backend/docker-compose.prod.yml` — Stack de produção com Nginx + limites de recursos
+- `backend/nginx/nginx.conf` — Reverse proxy + headers de segurança + suporte SSE
+- `backend/scripts/deploy.sh` — Script de deploy automatizado
+- `backend/setup.sh` — script automático de setup (venv, deps, modelos, diretórios)
+- `backend/requirements.txt` — dependências organizadas por categoria
+- `backend/.env.example` — configs via env vars com prefixo `RAG_`
 
-### 2. App (`app/`)
+### 2. Backend (`backend/app/`)
 | Módulo | Arquivos | O que faz |
 |--------|----------|-----------|
 | `config.py` | 1 | Settings com Pydantic (ollama, chroma, reranking, agente, debug, etc.) |
-| `main.py` | 1 | FastAPI com lifespan, CORS, router |
-| **`api/`** | `routes.py`, `schemas.py` | Rotas REST (/ask, /upload, /agent, /health, /clear) + schemas Pydantic |
-| **`rag/`** | `embeddings.py`, `vector_store/`, `chunking/`, `reranking/`, `loaders.py` | Embeddings via Ollama, ChromaDB persistente (adapter c/ factory), chunking inteligente (4 estrategias), reranking via cross-encoder, loaders pra 15 formatos |
-| **`agents/`** | `agent.py`, `tools.py`, `web_search.py` | LangGraph com grafo (agent -> tools -> agent), 5 tools (agora com busca web via DuckDuckGo) |
-| **`mcp/`** | `server.py` | Servidor MCP via stdio (expõe rag-ask e rag-status) |
+| `main.py` | 1 | FastAPI com lifespan, CORS, router + MCP SSE mount |
+| **`api/`** | `routes.py` | Agregador de rotas REST + health check |
+| **`rag/`** | `embeddings.py`, `vector_store/`, `chunking/`, `reranking/`, `loaders.py`, `routes.py`, `schemas.py`, `use_cases/` | Embeddings via Ollama, ChromaDB persistente (adapter c/ factory), chunking inteligente (4 estrategias), reranking via cross-encoder, loaders pra 15 formatos, casos de uso (ask, document) |
+| **`agents/`** | `routes.py`, `schemas.py`, `tools.py`, `web_search.py`, `use_cases/chat_use_case.py` | LangGraph com grafo (agent -> tools -> agent), 5 tools (RAG, tempo, calculo, web search, auto-lista), streaming |
+| **`mcp/`** | `server.py`, `transport.py`, `routes.py` | MCP via stdio + SSE/HTTP (MCPServerProvider singleton, MCPSseTransport) |
+| **`infra/`** | `llm.py` | LLMFactory compartilhada (cache por temperatura) |
 
 ### 3. Endpoints da API
 | Método | Rota | Descrição |
 |--------|------|-----------|
 | `POST` | `/api/v1/ask` | Pergunta ao RAG (retorna resposta + fontes) |
 | `POST` | `/api/v1/ask/stream` | Pergunta ao RAG com streaming (SSE) |
-| `POST` | `/api/v1/upload` | Upload de documento (PDF, TXT, MD, DOCX, HTML, CSV, JSON, PY, JS, TS, SQL, YAML, XML) |
+| `POST` | `/api/v1/upload` | Upload de documento (15 formatos) |
 | `DELETE` | `/api/v1/clear` | Limpa o banco vetorial |
 | `POST` | `/api/v1/agent` | Conversa com o agente (RAG + tools + memória) |
 | `POST` | `/api/v1/agent/stream` | Conversa com o agente com streaming (SSE) |
 | `GET` | `/api/v1/health` | Health check + lista coleções |
+| `GET` | `/api/v1/mcp/sse` | Conexão SSE do MCP |
+| `POST` | `/api/v1/mcp/message` | Mensagens JSON-RPC do MCP |
 
 ### 4. Tools do Agente (LangGraph)
 - `search_documents` — busca no RAG
 - `get_current_time` — data/hora atual
-- `calculate` — expressões matemáticas (eval seguro)
+- `calculate` — expressões matemáticas (eval seguro, com math.\*)
 - `search_web_tool` — pesquisa na internet (DuckDuckGo, gratis, sem API key)
 - `list_available_tools` — auto-descrição
 
 ### 5. MCP Server
-- Protocolo **MCP (Model Context Protocol)** via stdio
+- Protocolo **MCP (Model Context Protocol)** via **stdio** e **SSE/HTTP**
 - Ferramentas expostas: `rag-ask`, `rag-status`
-- Compatível com Claude Desktop, Cline, etc.
+- Arquitetura: `MCPServerProvider` (singleton) + `MCPSseTransport` + sub-app Starlette
+- Compatível com Claude Desktop, Cline, e qualquer cliente MCP via HTTP
 
 ### 6. Chunking esperto (Dia 4)
 - 4 estrategias: Recursive, Markdown, Code, Semantic (placeholder)
 - Factory em `app/rag/chunking/` com DI no DocumentUseCase
 - Loaders centralizados em `app/rag/loaders.py` — 15 extensoes suportadas
-- Rota de upload aceita todos os novos formatos
 
 ### 7. Reranking (Dia 5)
 - Cross-encoder `ms-marco-MiniLM-L-2-v2` (~80MB, CPU)
@@ -73,26 +80,40 @@
 - 100% gratuito, sem API key
 - Integrado ao LangGraph como as demais tools
 
+### 9. Frontend React (Dia 8)
+- React 19 + Vite 8 + TypeScript 6
+- Streaming SSE (RAG e Agente) com fallback
+- Upload de documentos, limpeza do banco, multi-threads
+- Dedup de tokens, strip de tool JSON vazado
+- Proxy Vite → Backend em `/api`
+
+### 10. Deploy Produção (Dia 11)
+- Dockerfile otimizado (multi-stage, non-root)
+- `docker-compose.prod.yml` com limites de recursos
+- Nginx reverse proxy + headers de segurança + suporte SSE
+- `scripts/deploy.sh` com comandos build/start/stop/logs/clean
+- `.dockerignore` para build leve
+
 ---
 
-##  ROTEIRO — PRÓXIMOS 15 DIAS
+##  ROTEIRO — PRÓXIMOS DIAS
 
 ```
-Dia 1  ─  Review + alinhamento + projeto rodando + RAG funcional
-Dia 2  ─  Streaming no RAG (resposta token a token via SSE) ← FEITO
-Dia 3  ─  Streaming no Agente (LangGraph + SSE) ← FEITO
-Dia 4  ─  Chunking esperto + mais formatos de documento ← FEITO
-Dia 5  ─  Reranking (melhorar qualidade das respostas) ← FEITO
-Dia 6  ─  Web Search Tool (agente pesquisar na internet) ← FEITO
-Dia 7  ─ MCP via SSE (além de stdio, expor via HTTP)
-Dia 8  ─ Frontend básico (Streamlit ou Next.js)
-Dia 9  ─ Testes unitários e de integração
-Dia 10 ─ Rate limiting + validações extras
-Dia 11 ─ Deploy (Railway, Render, ou server próprio)
-Dia 12 ─ LLMOps: tracing com LangSmith / OpenTelemetry
-Dia 13 ─ Documentação + README foda
-Dia 14 ─ Polimento + gravar demo
-Dia 15 ─ Publicar / mostrar pra geral
+Dia 1  ─  Review + alinhamento + projeto rodando + RAG funcional           ← FEITO
+Dia 2  ─  Streaming no RAG (resposta token a token via SSE)               ← FEITO
+Dia 3  ─  Streaming no Agente (LangGraph + SSE)                           ← FEITO
+Dia 4  ─  Chunking esperto + mais formatos de documento                   ← FEITO
+Dia 5  ─  Reranking (melhorar qualidade das respostas)                    ← FEITO
+Dia 6  ─  Web Search Tool (agente pesquisar na internet)                  ← FEITO
+Dia 7  ─  MCP via SSE (além de stdio, expor via HTTP)                     ← FEITO
+Dia 8  ─  Frontend básico (React + Vite + TypeScript)                     ← FEITO
+Dia 9  ─  Testes unitários e de integração                                ← PENDENTE
+Dia 10 ─  Rate limiting + validações extras                               ← PENDENTE
+Dia 11 ─  Deploy (Docker Compose + Nginx + produção)                      ← FEITO
+Dia 12 ─  LLMOps: tracing com LangSmith / OpenTelemetry
+Dia 13 ─  Documentação + README foda
+Dia 14 ─  Polimento + gravar demo
+Dia 15 ─  Publicar / mostrar pra geral
 ```
 
 ---
@@ -101,6 +122,7 @@ Dia 15 ─ Publicar / mostrar pra geral
 
 ```bash
 # Opção 1 — Híbrido (API local + Ollama em Docker) ← RECOMENDADO P/ DEV
+cd backend
 docker compose up -d ollama          # Só o Ollama no Docker
 source venv/bin/activate
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -108,7 +130,10 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 # Opção 2 — Docker completo
 docker compose up --build
 
-# Opção 3 — MCP Server separado
+# Opção 3 — Produção (com Nginx)
+./scripts/deploy.sh
+
+# Opção 4 — MCP Server (stdio)
 python -m app.mcp.server
 ```
 
@@ -133,85 +158,71 @@ curl -X POST http://localhost:8000/api/v1/ask \
 curl -X POST http://localhost:8000/api/v1/agent \
   -H "Content-Type: application/json" \
   -d '{"message": "Resuma os documentos que subi"}'
-```
 
----
-
-##  DIAS 2 e 3 — Streaming (RAG + Agente) — CONCLUÍDOS
-
-**Streaming no RAG (`/ask/stream`)** — endpoint que responde token a token via SSE.
-**Streaming no Agente (`/agent/stream`)** — endpoint que streama tokens, tool_calls e tool_results.
-
-### Arquivos criados/modificados
-- `app/rag/engine.py` → `ask_stream()` — generator de tokens do RAG
-- `app/api/routes.py` → endpoints `/ask/stream` e `/agent/stream`
-- `app/agents/agent.py` → `run_agent_stream()` — generator assíncrono de eventos do agente
-- `docs/dia-2-streaming-rag.md` — descritivo do Dia 2
-- `docs/dia-3-streaming-agente.md` — descritivo do Dia 3
-
-### Como testar
-```bash
-# Streaming RAG
-curl -N -X POST http://localhost:8000/api/v1/ask/stream \
-  -H "Content-Type: application/json" \
-  -d '{"question": "O que diz o documento?"}'
-
-# Streaming Agente
-curl -N -X POST http://localhost:8000/api/v1/agent/stream \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Resuma os documentos", "thread_id": "teste"}'
+# MCP via SSE
+curl -N http://localhost:8000/api/v1/mcp/sse
 ```
 
 ---
 
 ##  HISTÓRICO DE DIAS
 
-### Dia 1 (30/06) — Setup + RAG funcional
--  Projeto revisado e estruturado (8 módulos)
--  `README.md` + `PLANO.md`
--  Ollama via Docker + modelos baixados
--  API rodando com `uvicorn --reload`
--  RAG respondendo via Swagger
+### Setup anterior (Dias 1-6)
+Ver docs históricos em `docs/dia-1-setup-rag.md` até `docs/dia-6-web-search.md`.
 
-### Dia 2 (04/07) — Streaming no RAG
--  `app/rag/engine.py` → `ask_stream()` com generator de tokens
--  `POST /api/v1/ask/stream` → SSE token a token
--  Limpeza do código: removido observability/ e memory/
+### Dia 7 (06/07) — MCP via SSE
+- `app/mcp/server.py` refatorado: `MCPServerProvider` (singleton)
+- `app/mcp/transport.py`: `MCPSseTransport` — SSE adaptado pro FastAPI
+- `app/mcp/routes.py`: sub-app Starlette com `GET /sse` + `POST /message`
+- `app/main.py`: monta sub-app MCP em `/api/v1/mcp`
+- `docs/dia-7-mcp-sse-implementado.md`
 
-### Dia 3 (04/07) — Streaming no Agente
--  `app/agents/agent.py` → `run_agent_stream()` assíncrono
--  `POST /api/v1/agent/stream` → SSE com tokens, tool_calls, tool_results
--  Criação de `docs/` com descritivos diários
+### Dia 8 (06/07) — Frontend React
+- React 19 + Vite 8 + TypeScript 6
+- Componentes: `Chat.tsx`, `Header.tsx`, `api.ts`
+- Streaming SSE, upload, multi-threads, dedup de tokens
+- Build gerado em `frontend/dist/`
+- `docs/dia-8-frontend.md`
 
-### Dia 4 (05/07) — Chunking esperto + mais formatos
--  `app/rag/chunking/` com 4 estrategias (Recursive, Markdown, Code, Semantic)
--  `app/rag/loaders.py` — 15 extensoes de documento suportadas
--  DocumentUseCase com pipeline load -> chunk -> ingest
--  `docs/dia-4-chunking-esperto.md`
+### Dia 9 — Testes (PENDENTE)
+- Frontend: 2 testes no `App.test.tsx` + config Vitest
+- Backend: nenhum teste automatizado
+- `docs/dia-9-testes.md`
 
-### Dia 5 (05/07) — Reranking
--  `app/rag/reranking/reranker.py` — CrossEncoder (ms-marco-MiniLM-L-2-v2)
--  Integrado ao AskUseCase: busca 10, re-ordena, top 4
--  Configuravel via env var `RAG_RERANKING_ENABLED`
--  `docs/dia-5-reranking.md`
+### Dia 10 — Rate limiting + validações (PENDENTE)
+- Apenas validação Pydantic básica
+- Sem slowapi, sem rate limiting
+- `docs/dia-10-rate-limiting-validacoes.md`
 
-### Dia 6 (05/07) — Web Search no Agente
--  `app/agents/web_search.py` — DuckDuckGo search (ddgs)
--  Tool `search_web_tool` registrada no LangGraph
--  Agora sao 5 tools disponiveis
--  `docs/dia-6-web-search.md`
+### Dia 11 (06/07) — Deploy
+- `Dockerfile` otimizado: multi-stage, non-root, healthcheck, labels
+- `.dockerignore`: build context leve
+- `docker-compose.yml`: healthcheck no API
+- `docker-compose.prod.yml`: limites de recursos, logging, nginx
+- `nginx/nginx.conf`: reverse proxy + headers segurança + SSE
+- `scripts/deploy.sh`: build/start/stop/logs/clean
+- `docs/dia-11-deploy.md`
+
+---
 
 ### Setup atual
-- **API:** rodando local via `uvicorn --reload`
+- **API:** rodando local via `uvicorn --reload` ou Docker
 - **Ollama:** rodando via `docker compose up -d ollama`
 - **ChromaDB:** persistente em `./data/chroma`
-- **Portas:** API `:8000`, Ollama `:11434`
+- **Frontend:** Vite dev server (`npm run dev`) ou build estático
+- **Portas:** API `:8000`, Ollama `:11434`, Frontend `:5173`, Nginx `:80`
 
-### Pra subir
+### Pra subir (dev)
 ```bash
 docker compose up -d ollama
 source venv/bin/activate
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### Pra subir (produção)
+```bash
+cd backend
+./scripts/deploy.sh
 ```
 
 ---
