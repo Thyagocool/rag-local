@@ -45,10 +45,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copia apenas site-packages do builder (sem binarios desnecessarios)
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 
+# Cria diretório de dados do ChromaDB (para volume persistente)
+RUN mkdir -p /data/chroma
+
 # Cria usuário não-root para segurança
 RUN addgroup --system --gid 1001 app && \
     adduser --system --uid 1001 --ingroup app app && \
-    chown -R app:app /app
+    chown -R app:app /app && \
+    chown -R app:app /data/chroma
 
 # Copia o código (com ownership pro usuário app)
 COPY --chown=app:app . .
