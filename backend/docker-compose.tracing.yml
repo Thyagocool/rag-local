@@ -1,0 +1,26 @@
+# =============================================================================
+# Docker Compose — Tracing (OpenTelemetry + Jaeger)
+# Uso: docker compose -f docker-compose.prod.yml -f docker-compose.tracing.yml up -d
+# =============================================================================
+
+services:
+  # ─── API com tracing ativado ────────────────────────────────────────────
+  api:
+    environment:
+      - RAG_TRACING_ENABLED=true
+      - RAG_TRACING_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+
+  # ─── Jaeger (Visualizacao de traces) ──────────────────────────────────
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: rag-jaeger
+    ports:
+      - "16686:16686"   # UI
+      - "4318:4318"     # OTLP HTTP
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m

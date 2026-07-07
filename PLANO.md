@@ -94,6 +94,42 @@
 - `scripts/deploy.sh` com comandos build/start/stop/logs/clean
 - `.dockerignore` para build leve
 
+### 11. LLMOps / Tracing (Dia 12)
+- OpenTelemetry com instrumentação de FastAPI e httpx
+- `TracingManager` com suporte a console e OTLP exporters
+- `docker-compose.tracing.yml` com Jaeger all-in-one
+- Configurável via `RAG_TRACING_ENABLED` e `RAG_TRACING_OTLP_ENDPOINT`
+
+### 12. Documentação (Dia 13)
+- README.md completo com início rápido, arquitetura, endpoints
+- Docs diários em `docs/` (dias 1 a 15)
+- Diagrama ASCII da stack
+
+### 13. Polimento (Dia 14)
+- CORS configurável via env var
+- Validação de tamanho de upload
+- Info do pacote (`__version__`, `__app_name__`)
+
+---
+
+##  ROTEIRO — 15 DIAS (CONCLUÍDO)
+
+```
+Dia 1  ─  Review + alinhamento + projeto rodando + RAG funcional           ✅
+Dia 2  ─  Streaming no RAG (resposta token a token via SSE)               ✅
+Dia 3  ─  Streaming no Agente (LangGraph + SSE)                           ✅
+Dia 4  ─  Chunking esperto + mais formatos de documento                   ✅
+Dia 5  ─  Reranking (melhorar qualidade das respostas)                    ✅
+Dia 6  ─  Web Search Tool (agente pesquisar na internet)                  ✅
+Dia 7  ─  MCP via SSE (além de stdio, expor via HTTP)                     ✅
+Dia 8  ─  Frontend básico (React + Vite + TypeScript)                     ✅
+Dia 9  ─  Testes unitários e de integração                                ⏳ Parcial
+Dia 10 ─  Rate limiting + validações extras                               ⏳ Pendente
+Dia 11 ─  Deploy (Docker Compose + Nginx + produção)                      ✅
+Dia 12 ─  LLMOps: tracing com OpenTelemetry                               ✅
+Dia 13 ─  Documentação + README                                           ✅
+Dia 14 ─  Polimento + melhorias finais                                    ✅
+Dia 15 ─  Publicar                                                        ✅
 ---
 
 ##  ROTEIRO — PRÓXIMOS DIAS

@@ -12,12 +12,15 @@ from app.rag.schemas import (
     Source,
     UploadResponse,
 )
+from app.config import settings
 from app.rag.use_cases.ask_use_case import AskUseCase
 from app.rag.use_cases.document_use_case import DocumentUseCase
 
 
 ask_uc = AskUseCase()
 document_uc = DocumentUseCase()
+
+_MAX_UPLOAD_BYTES = settings.max_upload_size_mb * 1024 * 1024
 
 router = APIRouter()
 
@@ -81,8 +84,14 @@ async def upload_file(file: UploadFile = File(...)):
             ),
         )
 
+    content = await file.read()
+    if len(content) > _MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Arquivo muito grande. Maximo: {settings.max_upload_size_mb}MB",
+        )
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
-        content = await file.read()
         tmp.write(content)
         tmp_path = tmp.name
 

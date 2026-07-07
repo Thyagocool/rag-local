@@ -1,8 +1,9 @@
 #  RAG + Agentes + MCP + LLMOps
 
-API completa de **Engenharia de IA** com **RAG**, **Agentes Inteligentes** (LangGraph), **MCP Server** e **Observabilidade** — tudo rodando **100% local e grátis** com Ollama.
+**API completa de Engenharia de IA** com **RAG**, **Agentes Inteligentes** (LangGraph), **MCP Server** (stdio + SSE), **Frontend React** e **Observabilidade** — tudo rodando **100% local e grátis** com Ollama.
 
-> Stack: **FastAPI + LangChain + LangGraph + ChromaDB + Ollama + MCP**
+> Stack: **FastAPI + LangChain + LangGraph + ChromaDB + Ollama + MCP**  
+> Frontend: **React 19 + Vite 8 + TypeScript 6**
 
 ---
 
@@ -10,145 +11,215 @@ API completa de **Engenharia de IA** com **RAG**, **Agentes Inteligentes** (Lang
 
 | Funcionalidade | Descrição |
 |----------------|-----------|
-|  **RAG** | Upload de documentos (PDF, DOCX, TXT, MD), indexação vetorial e perguntas com respostas baseadas nos docs |
-|  **Agentes** | Agente com LangGraph que usa ferramentas (RAG, calculadora, hora atual) e tem memória de conversa |
-|  **MCP** | Servidor no protocolo MCP (Model Context Protocol) — compatível com Claude Desktop, Cline e outros |
-|  **Memória** | Persistência de conversas via SQLite |
-|  **Observabilidade** | Logs estruturados (structlog) + tracing OpenTelemetry |
-|  **Docker** | Stack completa com Docker Compose |
+|  **RAG** | Upload de 15 formatos de documento, chunking inteligente (4 estratégias), reranking por relevância |
+|  **Streaming SSE** | Respostas token a token tanto no RAG quanto no Agente |
+|  **Agentes LangGraph** | Agente com 5 ferramentas (RAG, calculadora, web search, hora, auto-lista) e memória de conversa |
+|  **MCP Server** | Protocolo MCP via **stdio** (Claude Desktop, Cline) e **SSE/HTTP** |
+|  **Frontend React** | Interface moderna com streaming, upload, multi-threads e tema escuro |
+|  **Observabilidade** | Tracing OpenTelemetry com exportação para Jaeger |
+|  **Deploy** | Docker Compose produção com Nginx, limites de recursos e health checks |
 |  **100% local** | LLM e embeddings rodando via Ollama — sem API paga, sem dados saindo da sua máquina |
 
 ---
 
-##  Estrutura do Projeto
+##  Stack
 
 ```
-RAG/
-├── app/
-│   ├── api/              # Rotas REST + Schemas Pydantic
-│   │   ├── routes.py
-│   │   └── schemas.py
-│   ├── agents/           # Agente LangGraph + Ferramentas
-│   │   ├── agent.py
-│   │   └── tools.py
-│   ├── rag/              # Motor RAG (embeddings, vectorstore, engine)
-│   │   ├── embeddings.py
-│   │   ├── vectorstore.py
-│   │   └── engine.py
-│   ├── mcp/              # Servidor MCP
-│   │   └── server.py
-│   ├── memory/           # Gerenciamento de memória
-│   │   └── memory.py
-│   ├── observability/    # Logging e tracing
-│   │   └── logging.py
-│   ├── config.py         # Configurações (Pydantic Settings)
-│   └── main.py           # App FastAPI
-├── docker-compose.yml    # Stack completa: API + Ollama + ChromaDB
-├── Dockerfile            # Multi-stage build
-├── setup.sh              # Setup automático
-├── requirements.txt      # Dependências Python
-├── .env.example          # Exemplo de configuração
-├── PLANO.md              # Roadmap de desenvolvimento
-└── README.md             # <-- Você está aqui
+Frontend (React + Vite)          Backend (FastAPI)
+       │                              │
+       │  POST /api/v1/*              │
+       │◄─────────────────────────────│
+       │                              │
+       │   SSE (Server-Sent Events)   │
+       │◄─────────────────────────────│
+       │                              │
+       │                    ┌─────────┴─────────┐
+       │                    │                   │
+       │               ┌────┴────┐        ┌────┴────┐
+       │               │ Ollama  │        │ChromaDB │
+       │               │(LLM +   │        │(Vector  │
+       │               │Embdds)  │        │ Store)  │
+       │               └─────────┘        └─────────┘
 ```
 
 ---
 
-##  Como Rodar
+##  ⚡ Início Rápido
 
 ### Opção 1 — Docker (recomendado)
 
-**Pré-requisitos:** Docker e Docker Compose instalados.
-
 ```bash
-# Sobe a stack completa (API + Ollama + ChromaDB)
+cd backend
 docker compose up --build
-
-# A API fica disponível em http://localhost:8000
-# O Ollama em http://localhost:11434
+# API → http://localhost:8000
+# Swagger → http://localhost:8000/docs
 ```
 
-Na primeira execução, o `ollama-init` vai baixar os modelos (`llama3.2:3b` e `nomic-embed-text`) — pode levar alguns minutos.
-
-### Opção 2 — Local (sem Docker)
-
-**Pré-requisitos:** Python 3.12+ e [Ollama](https://ollama.com) instalado.
+### Opção 2 — Desenvolvimento (hot reload)
 
 ```bash
-# 1. Setup automático
-chmod +x setup.sh && ./setup.sh
+# Terminal 1: Ollama via Docker
+cd backend
+docker compose up -d ollama
 
-# 2. Ativa o ambiente e sobe a API
+# Terminal 2: API local
 source venv/bin/activate
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
->  Se o Ollama não estiver instalado, o setup.sh avisa. Instale com:
-> ```bash
-> curl -fsSL https://ollama.com/install.sh | sh
-> ```
-
-### Opção 3 — Desenvolvimento (hot reload)
+### Opção 3 — Produção
 
 ```bash
-source venv/bin/activate
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+cd backend
+./scripts/deploy.sh
+# Acessar: http://localhost/api/v1/health
+```
+
+### Opção 4 — Frontend (dev)
+
+```bash
+# Terminal 1: Backend
+cd backend && source venv/bin/activate && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Terminal 2: Frontend
+cd frontend && npm run dev
+# Acessar: http://localhost:5173
 ```
 
 ---
 
 ##  Endpoints da API
 
-### Health Check
-```bash
-curl http://localhost:8000/api/v1/health
-```
+### REST
 
-### Upload de Documento
-```bash
-curl -X POST http://localhost:8000/api/v1/upload \
-  -F "file=@seu-documento.pdf"
-```
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/api/v1/health` | Health check + coleções |
+| `POST` | `/api/v1/ask` | Pergunta ao RAG |
+| `POST` | `/api/v1/ask/stream` | Pergunta ao RAG (SSE streaming) |
+| `POST` | `/api/v1/upload` | Upload de documento |
+| `DELETE` | `/api/v1/clear` | Limpa banco vetorial |
+| `POST` | `/api/v1/agent` | Conversa com agente |
+| `POST` | `/api/v1/agent/stream` | Conversa com agente (SSE streaming) |
+| `GET` | `/api/v1/mcp/sse` | Conexão SSE do MCP |
+| `POST` | `/api/v1/mcp/message` | Mensagens JSON-RPC do MCP |
 
-Formatos aceitos: **PDF, TXT, MD, DOCX**
+### Teste rápido
 
-### Perguntar ao RAG
 ```bash
-curl -X POST http://localhost:8000/api/v1/ask \
+# Health check
+curl -s http://localhost:8000/api/v1/health | python3 -m json.tool
+
+# Upload
+curl -s -X POST http://localhost:8000/api/v1/upload \
+  -F "file=@README.md"
+
+# Pergunta ao RAG
+curl -s -X POST http://localhost:8000/api/v1/ask \
   -H "Content-Type: application/json" \
-  -d '{"question": "O que diz o documento?"}'
-```
+  -d '{"question": "O que esse projeto faz?"}'
 
-### Conversar com o Agente
-```bash
-curl -X POST http://localhost:8000/api/v1/agent \
+# Conversa com agente
+curl -s -X POST http://localhost:8000/api/v1/agent \
   -H "Content-Type: application/json" \
   -d '{"message": "Resuma os documentos que subi"}'
 ```
 
-### Limpar Banco Vetorial
-```bash
-curl -X DELETE http://localhost:8000/api/v1/clear
+---
+
+##  Arquitetura
+
 ```
+backend/
+├── app/
+│   ├── api/routes.py         # Agregador de rotas REST
+│   ├── agents/
+│   │   ├── routes.py         # Rotas do agente
+│   │   ├── tools.py          # 5 ferramentas (RAG, calculo, web, etc.)
+│   │   ├── web_search.py     # Busca via DuckDuckGo
+│   │   └── use_cases/
+│   │       └── chat_use_case.py  # LangGraph orchestrator
+│   ├── rag/
+│   │   ├── routes.py         # Rotas do RAG
+│   │   ├── schemas.py        # Schemas Pydantic
+│   │   ├── embeddings.py     # Embeddings via Ollama
+│   │   ├── loaders.py        # Loaders para 15 formatos
+│   │   ├── chunking/         # 4 estratégias de chunking
+│   │   ├── reranking/        # Cross-encoder reranking
+│   │   ├── vector_store/     # Adapter Pattern (ChromaDB)
+│   │   └── use_cases/
+│   │       ├── ask_use_case.py       # Pergunta ao RAG
+│   │       └── document_use_case.py  # Upload + chunk + ingest
+│   ├── mcp/
+│   │   ├── server.py         # MCPServerProvider (singleton)
+│   │   ├── transport.py      # MCPSseTransport
+│   │   └── routes.py         # Sub-app SSE Starlette
+│   ├── infra/
+│   │   ├── llm.py            # LLMFactory (cache por temperatura)
+│   │   └── tracing.py        # OpenTelemetry tracing
+│   ├── config.py             # Pydantic Settings
+│   └── main.py               # FastAPI app
+├── nginx/nginx.conf          # Reverse proxy (produção)
+├── scripts/deploy.sh         # Script de deploy
+├── docker-compose.yml        # Stack dev
+├── docker-compose.prod.yml   # Stack produção
+├── docker-compose.tracing.yml # Jaeger tracing
+├── Dockerfile                # Multi-stage build
+└── requirements.txt          # Dependências
+
+frontend/
+└── src/
+    ├── components/
+    │   ├── Chat.tsx           # Componente de chat (streaming)
+    │   └── Header.tsx         # Upload, modos, threads
+    ├── services/
+    │   └── api.ts             # Camada de API
+    ├── App.tsx                # Componente principal
+    └── main.tsx               # Entry point
+
+docs/                          # Documentação diária do desenvolvimento
+```
+
+---
+
+##  Agente Inteligente (LangGraph)
+
+O agente usa um grafo com dois nós:
+
+```
+  ┌─────────┐
+  │ Agent   │ ← Decide qual ferramenta usar (ou responder)
+  └────┬────┘
+       │
+       ▼ (se tool_call)
+  ┌─────────┐
+  │ Tools   │ ← Executa a ferramenta e volta pro Agent
+  └────┬────┘
+       │
+       ▼ (se resposta final)
+       FIM
+```
+
+### Ferramentas disponíveis
+
+| Ferramenta | Descrição |
+|------------|-----------|
+| `search_documents` | Busca nos documentos indexados (RAG) |
+| `get_current_time` | Data e hora atual |
+| `calculate` | Expressões matemáticas (`sqrt`, `log`, `sin`, `cos`, etc.) |
+| `search_web_tool` | Pesquisa na web via DuckDuckGo |
+| `list_available_tools` | Auto-descrição |
 
 ---
 
 ##  MCP Server
 
-O servidor MCP permite que clientes compatíveis (Claude Desktop, Cline, etc.) consumam as ferramentas do RAG remotamente.
+O servidor MCP expõe as ferramentas do RAG para clientes compatíveis.
 
-```bash
-# Inicia o servidor MCP via stdio
-python -m app.mcp.server
-```
-
-**Ferramentas expostas:**
-- `rag-ask` — faz perguntas aos documentos indexados
-- `rag-status` — verifica o status do sistema
-
-Para conectar no **Claude Desktop**, adicione no `claude_desktop_config.json`:
+### Via stdio (Claude Desktop, Cline)
 
 ```json
+// claude_desktop_config.json
 {
   "mcpServers": {
     "rag": {
@@ -162,11 +233,53 @@ Para conectar no **Claude Desktop**, adicione no `claude_desktop_config.json`:
 }
 ```
 
+### Via SSE/HTTP
+
+```bash
+# Conecta ao SSE
+curl -N http://localhost:8000/api/v1/mcp/sse
+
+# Envia mensagem JSON-RPC
+curl -X POST "http://localhost:8000/api/v1/mcp/message?session_id=SEU_SESSION_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+### Ferramentas expostas
+
+| Ferramenta | Descrição |
+|------------|-----------|
+| `rag-ask` | Faz perguntas aos documentos indexados |
+| `rag-status` | Verifica status do sistema |
+
+---
+
+##  Observabilidade (OpenTelemetry)
+
+### Ativar tracing
+
+```bash
+# Dev (console exporter)
+export RAG_TRACING_ENABLED=true
+
+# Produção (com Jaeger)
+export RAG_TRACING_ENABLED=true
+export RAG_TRACING_OTLP_ENDPOINT=http://localhost:4318/v1/traces
+```
+
+### Com Docker + Jaeger
+
+```bash
+cd backend
+docker compose -f docker-compose.prod.yml -f docker-compose.tracing.yml up -d
+# Jaeger UI → http://localhost:16686
+```
+
 ---
 
 ##  Configuração
 
-Todas as configs são via variáveis de ambiente com prefixo `RAG_`:
+Variáveis de ambiente com prefixo `RAG_`:
 
 | Variável | Default | Descrição |
 |----------|---------|-----------|
@@ -175,45 +288,42 @@ Todas as configs são via variáveis de ambiente com prefixo `RAG_`:
 | `RAG_EMBEDDING_MODEL` | `nomic-embed-text` | Modelo de embeddings |
 | `RAG_CHROMA_PERSIST_DIR` | `./data/chroma` | Diretório do ChromaDB |
 | `RAG_COLLECTION_NAME` | `rag_docs` | Nome da coleção vetorial |
-| `RAG_DEBUG` | `true` | Modo debug (logs coloridos) |
-| `RAG_OTLP_ENDPOINT` | — | Endpoint OpenTelemetry (opcional) |
-
-Copie o `.env.example` para `.env` e ajuste:
-
-```bash
-cp .env.example .env
-```
+| `RAG_DEBUG` | `true` | Modo debug |
+| `RAG_RERANKING_ENABLED` | `true` | Reranking ativo |
+| `RAG_TRACING_ENABLED` | `false` | Tracing OpenTelemetry |
+| `RAG_TRACING_OTLP_ENDPOINT` | — | Endpoint OTLP (Jaeger) |
 
 ---
 
-##  Testando
+##  Formatos de Documento Suportados
 
-```bash
-# Health check
-curl -s http://localhost:8000/api/v1/health | python3 -m json.tool
-
-# Upload + Pergunta
-curl -s -X POST http://localhost:8000/api/v1/upload -F "file=@README.md"
-curl -s -X POST http://localhost:8000/api/v1/ask \
-  -H "Content-Type: application/json" \
-  -d '{"question": "O que esse projeto faz?"}'
-```
+`PDF`, `TXT`, `MD`, `DOCX`, `HTML`, `CSV`, `JSON`, `PY`, `JS`, `TS`, `SQL`, `YAML`, `XML`
 
 ---
 
 ##  Roadmap
 
-O projeto está em desenvolvimento ativo. Veja o [`PLANO.md`](./PLANO.md) para o roteiro completo.
+O projeto segue um plano de 15 dias. Status atual:
 
-**Próximos passos:**
-- [ ] Streaming nas respostas (SSE)
-- [ ] Chunking inteligente de documentos
-- [ ] Reranking de resultados
-- [ ] Web Search Tool
-- [ ] MCP via SSE (HTTP)
-- [ ] Frontend (Streamlit)
-- [ ] Testes automatizados
-- [ ] Deploy
+| Dia | Feature | Status |
+|-----|---------|--------|
+| 1 | Setup + RAG funcional | ✅ |
+| 2 | Streaming no RAG (SSE) | ✅ |
+| 3 | Streaming no Agente | ✅ |
+| 4 | Chunking esperto | ✅ |
+| 5 | Reranking | ✅ |
+| 6 | Web Search Tool | ✅ |
+| 7 | MCP via SSE | ✅ |
+| 8 | Frontend React | ✅ |
+| 9 | Testes | ⏳ |
+| 10 | Rate limiting | ⏳ |
+| 11 | Deploy produção | ✅ |
+| 12 | LLMOps / Tracing | ✅ |
+| 13 | Documentação | ✅ |
+| 14 | Polimento | ✅ |
+| 15 | Publicar | ✅ |
+
+Detalhes em [`PLANO.md`](./PLANO.md) e `docs/`.
 
 ---
 
@@ -222,13 +332,13 @@ O projeto está em desenvolvimento ativo. Veja o [`PLANO.md`](./PLANO.md) para o
 | Categoria | Bibliotecas |
 |-----------|-------------|
 | **Core** | FastAPI, Uvicorn, Pydantic |
-| **RAG & IA** | LangChain, LangChain-Chroma, LangChain-Ollama |
-| **Vetorial** | ChromaDB |
+| **RAG & IA** | LangChain, ChromaDB, Ollama |
 | **Agentes** | LangGraph |
 | **MCP** | MCP Python SDK |
-| **Documentos** | PyPDF, python-docx, unstructured |
-| **Observabilidade** | structlog, OpenTelemetry |
-| **Utilitários** | httpx, rich, python-multipart |
+| **Documentos** | PyPDF, python-docx, BeautifulSoup, Markdown |
+| **Reranking** | Sentence-Transformers |
+| **Observabilidade** | OpenTelemetry |
+| **Frontend** | React, Vite, TypeScript, Vitest |
 
 ---
 

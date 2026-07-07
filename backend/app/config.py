@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic_settings import BaseSettings
 
 
@@ -15,6 +16,7 @@ class Settings(BaseSettings):
     app_name: str = "RAG + Agentes + MCP"
     app_version: str = "0.1.0"
     debug: bool = True
+    cors_origins: list[str] = ["*"]
 
     # --- Reranking ---
     rag_reranking_enabled: bool = True
@@ -22,6 +24,13 @@ class Settings(BaseSettings):
 
     # --- Agentes ---
     max_tool_calls: int = 5
+
+    # --- Tracing / LLMOps (OpenTelemetry) ---
+    tracing_enabled: bool = False
+    tracing_otlp_endpoint: Optional[str] = None
+
+    # --- Upload ---
+    max_upload_size_mb: int = 10
 
     model_config = {"env_prefix": "RAG_", "env_file": ".env"}
 
