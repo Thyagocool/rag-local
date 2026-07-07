@@ -37,5 +37,12 @@ ddgs>=9.0.0
 # ChromaDB exige posthog<3 (API incompativel nas versoes recentes)
 posthog<3
 
+# OpenTelemetry (tracing / LLMOps)
+opentelemetry-api==1.29.0
+opentelemetry-sdk==1.29.0
+opentelemetry-instrumentation-fastapi==0.50b0
+opentelemetry-instrumentation-httpx==0.50b0
+opentelemetry-exporter-otlp==1.29.0
+
 # Utilitários
 httpx==0.28.1
