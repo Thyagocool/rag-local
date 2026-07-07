@@ -1,0 +1,52 @@
+# =============================================================================
+# Docker Compose — API + Frontend (Ollama rodando no host)
+# Uso: docker compose -f docker-compose.host-ollama.yml up -d
+# =============================================================================
+
+services:
+  # ─── API (FastAPI + RAG + Agentes + MCP) ─────────────────────────────────
+  api:
+    build:
+      context: backend
+      dockerfile: Dockerfile
+    image: rag-api:latest
+    container_name: rag-api
+    ports:
+      - "8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - RAG_OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - RAG_LLM_MODEL=qwen2:0.5b
+      - RAG_EMBEDDING_MODEL=nomic-embed-text
+      - RAG_CHROMA_PERSIST_DIR=/data/chroma
+      - RAG_DEBUG=false
+      - RAG_RERANKING_ENABLED=true
+      - RAG_TRACING_ENABLED=false
+    volumes:
+      - chroma_data:/data/chroma
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # ─── Frontend (React + Vite) ──────────────────────────────────────────
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    image: rag-frontend:latest
+    container_name: rag-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      api:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  chroma_data:
+    name: rag_chroma_data
