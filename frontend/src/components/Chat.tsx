@@ -121,11 +121,22 @@ export default function Chat({ mode, threadId }: ChatProps) {
             return [...updated];
           });
         }
-      } else {
+        } else {
         // Agent mode: tool_calls e resultados sao invisiveis pro usuario
         try {
           let lastToken = "";
           for await (const event of agentStream(q, threadId)) {
+            if (event.type === "error") {
+              setMessages((prev) => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last.role === "assistant") {
+                  last.content = `[Erro] ${event.content}`;
+                }
+                return [...updated];
+              });
+              return;
+            }
             if (event.type === "token" && event.content) {
               // Evita duplicacao entre eventos (backend mandou 2x o mesmo token)
               if (event.content === lastToken) continue;
@@ -144,12 +155,13 @@ export default function Chat({ mode, threadId }: ChatProps) {
               });
             }
           }
-        } catch {
+        } catch (err) {
+          const errMsg = err instanceof Error ? err.message : "Erro desconhecido";
           setMessages((prev) => {
             const updated = [...prev];
             const last = updated[updated.length - 1];
             if (last.role === "assistant") {
-              last.content += "\n[Erro ao conectar com o agente]";
+              last.content += `\n[Erro ao conectar com o agente: ${errMsg}]`;
             }
             return [...updated];
           });

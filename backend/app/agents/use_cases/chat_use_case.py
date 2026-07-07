@@ -120,48 +120,52 @@ class ChatUseCase:
         messages = [HumanMessage(content=message)]
 
         last_token_sent = None
-        async for event in graph.astream(
-            {"messages": messages}, config, stream_mode="updates"
-        ):
-            if not isinstance(event, dict):
-                continue
-
-            for node_name, value in event.items():
-                if value is None:
+        try:
+            async for event in graph.astream(
+                {"messages": messages}, config, stream_mode="updates"
+            ):
+                if not isinstance(event, dict):
                     continue
 
-                node_messages = value.get("messages", [])
-                if not node_messages:
-                    continue
+                for node_name, value in event.items():
+                    if value is None:
+                        continue
 
-                last_msg = node_messages[-1]
+                    node_messages = value.get("messages", [])
+                    if not node_messages:
+                        continue
 
-                if node_name == "agent":
-                    if isinstance(last_msg, AIMessage):
-                        if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
-                            for tc in last_msg.tool_calls:
-                                yield {
-                                    "type": "tool_call",
-                                    "name": tc.get("name", "unknown"),
-                                    "args": tc.get("args", "{}"),
-                                }
-                        elif last_msg.content:
-                            content = last_msg.content
-                            # Evita emitir o mesmo token duas vezes
-                            if content != last_token_sent:
-                                last_token_sent = content
-                                yield {
-                                    "type": "token",
-                                    "content": content,
-                                }
+                    last_msg = node_messages[-1]
 
-                elif node_name == "tools":
-                    for msg in node_messages:
-                        yield {
-                            "type": "tool_result",
-                            "name": getattr(msg, "name", "tool"),
-                            "content": msg.content[:500],
-                        }
+                    if node_name == "agent":
+                        if isinstance(last_msg, AIMessage):
+                            if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
+                                for tc in last_msg.tool_calls:
+                                    yield {
+                                        "type": "tool_call",
+                                        "name": tc.get("name", "unknown"),
+                                        "args": tc.get("args", "{}"),
+                                    }
+                            elif last_msg.content:
+                                content = last_msg.content
+                                # Evita emitir o mesmo token duas vezes
+                                if content != last_token_sent:
+                                    last_token_sent = content
+                                    yield {
+                                        "type": "token",
+                                        "content": content,
+                                    }
+
+                    elif node_name == "tools":
+                        for msg in node_messages:
+                            yield {
+                                "type": "tool_result",
+                                "name": getattr(msg, "name", "tool"),
+                                "content": msg.content[:500],
+                            }
+        except Exception as e:
+            logger.error("Erro no streaming do agente: %s", e, exc_info=True)
+            yield {"type": "error", "content": f"Erro no agente: {e}"}
 
         yield {"type": "done"}
 # Exports pra manter compatibilidade com codigo legado
