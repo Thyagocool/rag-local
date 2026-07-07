@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.api.routes import router
+from app.mcp.routes import mcp_sse_app
 
 app = FastAPI(title=settings.app_name, version=settings.app_version)
 
@@ -16,8 +17,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Rotas
+# Rotas REST
 app.include_router(router, prefix="/api/v1")
+
+# MCP via SSE (sub-app ASGI montado em /api/v1/mcp)
+app.mount("/api/v1/mcp", app=mcp_sse_app)
 
 
 if __name__ == "__main__":
