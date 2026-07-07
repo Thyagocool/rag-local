@@ -36,7 +36,9 @@ REGRAS:
 1. Sempre responda em portugues
 2. Use as ferramentas quando necessario
 3. Se nao souber, pergunte mais informacoes
-4. Mantenha as respostas claras e objetivas"""
+4. Mantenha as respostas claras e objetivas
+5. Nao repita informacoes. Seja conciso.
+6. NUNCA inclua JSON de ferramentas nem definicoes de parametros na sua resposta. As ferramentas sao chamadas internamente, sem mostrar o JSON ao usuario."""
 
 
 class ChatUseCase:
@@ -109,41 +111,57 @@ class ChatUseCase:
         }
 
     async def run_agent_stream(self, message: str, thread_id: str = "default"):
-        """Executa o agente com streaming — tokens, tool_calls e tool_results."""
+        """Executa o agente com streaming — tokens, tool_calls e tool_results.
+
+        Usa stream_mode='updates' para evitar vazar JSON bruto de tool calls.
+        """
         graph = self._get_graph()
         config = {"configurable": {"thread_id": thread_id}}
         messages = [HumanMessage(content=message)]
 
-        async for event in graph.astream({"messages": messages}, config, stream_mode="messages"):
-            if not isinstance(event, (list, tuple)) or len(event) != 2:
+        last_token_sent = None
+        async for event in graph.astream(
+            {"messages": messages}, config, stream_mode="updates"
+        ):
+            if not isinstance(event, dict):
                 continue
 
-            msg, metadata = event
+            for node_name, value in event.items():
+                if value is None:
+                    continue
 
-            if isinstance(msg, AIMessageChunk) and msg.content:
-                yield {"type": "token", "content": msg.content}
+                node_messages = value.get("messages", [])
+                if not node_messages:
+                    continue
 
-            if isinstance(msg, AIMessageChunk) and msg.tool_call_chunks:
-                for tc in msg.tool_call_chunks:
-                    yield {
-                        "type": "tool_call",
-                        "name": tc.get("name", "unknown"),
-                        "args": tc.get("args", "{}"),
-                    }
+                last_msg = node_messages[-1]
 
-            if isinstance(msg, ToolMessage):
-                yield {
-                    "type": "tool_result",
-                    "name": getattr(msg, "name", "tool"),
-                    "content": msg.content[:500],
-                }
+                if node_name == "agent":
+                    if isinstance(last_msg, AIMessage):
+                        if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
+                            for tc in last_msg.tool_calls:
+                                yield {
+                                    "type": "tool_call",
+                                    "name": tc.get("name", "unknown"),
+                                    "args": tc.get("args", "{}"),
+                                }
+                        elif last_msg.content:
+                            content = last_msg.content
+                            # Evita emitir o mesmo token duas vezes
+                            if content != last_token_sent:
+                                last_token_sent = content
+                                yield {
+                                    "type": "token",
+                                    "content": content,
+                                }
 
-            if hasattr(msg, "type") and getattr(msg, "type", "") == "tool":
-                yield {
-                    "type": "tool_result",
-                    "name": getattr(msg, "name", "tool"),
-                    "content": msg.content[:500],
-                }
+                elif node_name == "tools":
+                    for msg in node_messages:
+                        yield {
+                            "type": "tool_result",
+                            "name": getattr(msg, "name", "tool"),
+                            "content": msg.content[:500],
+                        }
 
         yield {"type": "done"}
 # Exports pra manter compatibilidade com codigo legado
