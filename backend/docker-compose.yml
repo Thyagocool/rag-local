@@ -11,7 +11,7 @@ services:
       - "8000:8000"
     environment:
       - RAG_OLLAMA_BASE_URL=http://ollama:11434
-      - RAG_LLM_MODEL=llama3.2:1b
+      - RAG_LLM_MODEL=qwen2.5:0.5b
       - RAG_EMBEDDING_MODEL=nomic-embed-text
       - RAG_CHROMA_PERSIST_DIR=/data/chroma
       - RAG_DEBUG=true
@@ -59,7 +59,7 @@ services:
     entrypoint: >
       sh -c "
         echo 'Baixando modelo de linguagem...' &&
-        ollama pull llama3.2:1b &&
+        ollama pull qwen2.5:0.5b &&
         echo 'Baixando modelo de embeddings...' &&
         ollama pull nomic-embed-text &&
         echo 'Modelos prontos!'

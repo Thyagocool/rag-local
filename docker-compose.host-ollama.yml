@@ -17,12 +17,11 @@ services:
     network_mode: host
     environment:
       - RAG_OLLAMA_BASE_URL=http://localhost:11434
-      - RAG_LLM_MODEL=qwen2:0.5b
-      - RAG_AGENT_MODEL=qwen2.5:0.5b
+      - RAG_LLM_MODEL=qwen2.5:0.5b
       - RAG_EMBEDDING_MODEL=nomic-embed-text
       - RAG_CHROMA_PERSIST_DIR=/data/chroma
       - RAG_DEBUG=false
-      - RAG_RERANKING_ENABLED=true
+      - RAG_RERANKING_ENABLED=false
       - RAG_TRACING_ENABLED=false
     volumes:
       - chroma_data:/data/chroma

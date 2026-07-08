@@ -15,11 +15,11 @@ services:
       - "8000"
     environment:
       - RAG_OLLAMA_BASE_URL=http://ollama:11434
-      - RAG_LLM_MODEL=llama3.2:1b
+      - RAG_LLM_MODEL=qwen2.5:0.5b
       - RAG_EMBEDDING_MODEL=nomic-embed-text
       - RAG_CHROMA_PERSIST_DIR=/data/chroma
       - RAG_DEBUG=false
-      - RAG_RERANKING_ENABLED=true
+      - RAG_RERANKING_ENABLED=false
     volumes:
       - chroma_data:/data/chroma
     depends_on:
@@ -34,9 +34,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2g
+          memory: 1g
         reservations:
-          memory: 512m
+          memory: 256m
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8000/api/v1/health"]
       interval: 30s
@@ -68,9 +68,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 4g
+          memory: 2g
         reservations:
-          memory: 1g
+          memory: 512m
 
   # ─── Init: baixa os modelos no Ollama ───────────────────────────────────
   ollama-init:
@@ -86,7 +86,7 @@ services:
     entrypoint: >
       sh -c "
         echo 'Baixando modelo de linguagem...' &&
-        ollama pull llama3.2:1b &&
+        ollama pull qwen2.5:0.5b &&
         echo 'Baixando modelo de embeddings...' &&
         ollama pull nomic-embed-text &&
         echo 'Modelos prontos!'
