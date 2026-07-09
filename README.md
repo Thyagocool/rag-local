@@ -5,20 +5,22 @@
 > Stack: **FastAPI + LangChain + LangGraph + ChromaDB + Ollama + MCP**  
 > Frontend: **React 19 + Vite 8 + TypeScript 6**
 
+> Modelo leve: **Qwen 2.5 0.5B** (~400MB) — roda até em servidores com **1GB de RAM**
+
 ---
 
 ##  Funcionalidades
 
 | Funcionalidade | Descrição |
 |----------------|-----------|
-|  **RAG** | Upload de 15 formatos de documento, chunking inteligente (4 estratégias), reranking por relevância |
-|  **Streaming SSE** | Respostas token a token tanto no RAG quanto no Agente |
-|  **Agentes LangGraph** | Agente com 5 ferramentas (RAG, calculadora, web search, hora, auto-lista) e memória de conversa |
-|  **MCP Server** | Protocolo MCP via **stdio** (Claude Desktop, Cline) e **SSE/HTTP** |
-|  **Frontend React** | Interface moderna com streaming, upload, multi-threads e tema escuro |
-|  **Observabilidade** | Tracing OpenTelemetry com exportação para Jaeger |
-|  **Deploy** | Docker Compose produção com Nginx, limites de recursos e health checks |
-|  **100% local** | LLM e embeddings rodando via Ollama — sem API paga, sem dados saindo da sua máquina |
+| **RAG** | Upload de 15 formatos de documento, chunking inteligente (4 estratégias), reranking opcional |
+| **Streaming SSE** | Respostas token a token tanto no RAG quanto no Agente |
+| **Agentes LangGraph** | Agente com 5 ferramentas (RAG, calculadora, web search, hora, auto-lista) e memória de conversa |
+| **MCP Server** | Protocolo MCP via **stdio** (Claude Desktop, Cline) e **SSE/HTTP** |
+| **Frontend React** | Interface moderna com streaming, upload, multi-threads e tema escuro |
+| **Observabilidade** | Tracing OpenTelemetry com exportação para Jaeger |
+| **Deploy** | Docker Compose produção com Nginx, limites de recursos e health checks. Suporte a Ollama no host para servidores com pouca memória |
+| **100% local** | LLM e embeddings rodando via Ollama — sem API paga, sem dados saindo da sua máquina |
 
 ---
 
@@ -46,7 +48,7 @@ Frontend (React + Vite)          Backend (FastAPI)
 
 ##  ⚡ Início Rápido
 
-### Opção 1 — Docker (recomendado)
+### Opção 1 — Docker completo
 
 ```bash
 cd backend
@@ -55,7 +57,15 @@ docker compose up --build
 # Swagger → http://localhost:8000/docs
 ```
 
-### Opção 2 — Desenvolvimento (hot reload)
+### Opção 2 — Ollama no host + API em container (recomendado para servidores com pouca RAM)
+
+```bash
+# Ollama roda no host (fora do Docker), API + Frontend em container
+docker compose -f docker-compose.host-ollama.yml up -d --build
+# API → http://localhost:8000
+```
+
+### Opção 3 — Desenvolvimento (hot reload)
 
 ```bash
 # Terminal 1: Ollama via Docker
@@ -67,7 +77,7 @@ source venv/bin/activate
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Opção 3 — Produção
+### Opção 4 — Produção
 
 ```bash
 cd backend
@@ -75,7 +85,7 @@ cd backend
 # Acessar: http://localhost/api/v1/health
 ```
 
-### Opção 4 — Frontend (dev)
+### Opção 5 — Frontend (dev)
 
 ```bash
 # Terminal 1: Backend
@@ -129,55 +139,70 @@ curl -s -X POST http://localhost:8000/api/v1/agent \
 
 ##  Arquitetura
 
+O projeto foi refatorado seguindo **SOLID**, **Clean Code** e **DRY**, aplicando padrões de projeto para garantir desacoplamento, testabilidade e manutenibilidade.
+
+### Padrões utilizados
+
+| Padrão | Onde | Pra quê |
+|--------|------|---------|
+| **Adapter** | `rag/vector_store/` | ChromaDB encapsulado atrás de `VectorStoreAdapter`. Troca o banco sem afetar o resto |
+| **Strategy** | `rag/chunking/` | 4 estratégias de chunking (recursivo, markdown, código, semântico). Factory escolhe, use case consome |
+| **Singleton + Factory** | `mcp/server.py`, `infra/llm.py` | `MCPServerProvider` e `LLMFactory` garantem instância única e centralizam criação |
+| **Dependency Injection** | `rag/use_cases/` | `AskUseCase` recebe `VectorStoreAdapter`, `DocumentUseCase` recebe `ChunkingStrategy` |
+| **SRP / OCP / DIP** | `mcp/` | Cada arquivo uma responsabilidade. Novo transporte SSE foi adicionado sem modificar ferramentas existentes |
+
+### Estrutura de diretórios
+
 ```
 backend/
 ├── app/
-│   ├── api/routes.py         # Agregador de rotas REST
+│   ├── api/routes.py            # Agregador de rotas REST
 │   ├── agents/
-│   │   ├── routes.py         # Rotas do agente
-│   │   ├── tools.py          # 5 ferramentas (RAG, calculo, web, etc.)
-│   │   ├── web_search.py     # Busca via DuckDuckGo
+│   │   ├── routes.py            # Rotas do agente
+│   │   ├── tools.py             # 5 ferramentas (RAG, calculo, web, etc.)
+│   │   ├── web_search.py        # Busca via DuckDuckGo
 │   │   └── use_cases/
-│   │       └── chat_use_case.py  # LangGraph orchestrator
+│   │       └── chat_use_case.py # LangGraph orchestrator
 │   ├── rag/
-│   │   ├── routes.py         # Rotas do RAG
-│   │   ├── schemas.py        # Schemas Pydantic
-│   │   ├── embeddings.py     # Embeddings via Ollama
-│   │   ├── loaders.py        # Loaders para 15 formatos
-│   │   ├── chunking/         # 4 estratégias de chunking
-│   │   ├── reranking/        # Cross-encoder reranking
-│   │   ├── vector_store/     # Adapter Pattern (ChromaDB)
+│   │   ├── routes.py            # Rotas do RAG
+│   │   ├── schemas.py           # Schemas Pydantic
+│   │   ├── embeddings.py        # Embeddings via Ollama
+│   │   ├── loaders.py           # Loaders para 15 formatos
+│   │   ├── chunking/            # Strategy Pattern — 4 estrategias
+│   │   ├── reranking/           # Cross-encoder reranking
+│   │   ├── vector_store/        # Adapter Pattern — ChromaDB
 │   │   └── use_cases/
-│   │       ├── ask_use_case.py       # Pergunta ao RAG
-│   │       └── document_use_case.py  # Upload + chunk + ingest
+│   │       ├── ask_use_case.py      # Pergunta ao RAG (com DI)
+│   │       └── document_use_case.py # Upload + chunk + ingest (com DI)
 │   ├── mcp/
-│   │   ├── server.py         # MCPServerProvider (singleton)
-│   │   ├── transport.py      # MCPSseTransport
-│   │   └── routes.py         # Sub-app SSE Starlette
+│   │   ├── server.py            # MCPServerProvider (Singleton)
+│   │   ├── transport.py         # MCPSseTransport
+│   │   └── routes.py            # Sub-app SSE Starlette
 │   ├── infra/
-│   │   ├── llm.py            # LLMFactory (cache por temperatura)
-│   │   └── tracing.py        # OpenTelemetry tracing
-│   ├── config.py             # Pydantic Settings
-│   └── main.py               # FastAPI app
-├── nginx/nginx.conf          # Reverse proxy (produção)
-├── scripts/deploy.sh         # Script de deploy
-├── docker-compose.yml        # Stack dev
-├── docker-compose.prod.yml   # Stack produção
-├── docker-compose.tracing.yml # Jaeger tracing
-├── Dockerfile                # Multi-stage build
-└── requirements.txt          # Dependências
+│   │   ├── llm.py               # LLMFactory (Factory + cache)
+│   │   └── tracing.py           # OpenTelemetry tracing
+│   ├── config.py                # Pydantic Settings c/ env vars (RAG_ prefix)
+│   └── main.py                  # FastAPI app
+├── nginx/nginx.conf             # Reverse proxy (producao)
+├── scripts/deploy.sh            # Script de deploy automatizado
+├── docker-compose.yml           # Stack dev completa
+├── docker-compose.prod.yml      # Stack producao (Nginx + limites)
+├── docker-compose.host-ollama.yml # Stack p/ servidores com pouca RAM
+├── docker-compose.tracing.yml   # Jaeger tracing
+├── Dockerfile                   # Multi-stage build, non-root
+└── requirements.txt             # Dependencias
 
 frontend/
 └── src/
     ├── components/
-    │   ├── Chat.tsx           # Componente de chat (streaming)
-    │   └── Header.tsx         # Upload, modos, threads
+    │   ├── Chat.tsx             # Componente de chat (streaming SSE)
+    │   └── Header.tsx           # Upload, modos, threads
     ├── services/
-    │   └── api.ts             # Camada de API
-    ├── App.tsx                # Componente principal
-    └── main.tsx               # Entry point
+    │   └── api.ts               # Camada de API
+    ├── App.tsx                  # Componente principal
+    └── main.tsx                 # Entry point
 
-docs/                          # Documentação diária do desenvolvimento
+docs/                            # Documentacao diaria do desenvolvimento
 ```
 
 ---
@@ -284,12 +309,12 @@ Variáveis de ambiente com prefixo `RAG_`:
 | Variável | Default | Descrição |
 |----------|---------|-----------|
 | `RAG_OLLAMA_BASE_URL` | `http://localhost:11434` | URL do Ollama |
-| `RAG_LLM_MODEL` | `llama3.2:3b` | Modelo de linguagem |
+| `RAG_LLM_MODEL` | `qwen2.5:0.5b` | Modelo de linguagem (~400MB, roda em 1GB RAM) |
 | `RAG_EMBEDDING_MODEL` | `nomic-embed-text` | Modelo de embeddings |
 | `RAG_CHROMA_PERSIST_DIR` | `./data/chroma` | Diretório do ChromaDB |
 | `RAG_COLLECTION_NAME` | `rag_docs` | Nome da coleção vetorial |
 | `RAG_DEBUG` | `true` | Modo debug |
-| `RAG_RERANKING_ENABLED` | `true` | Reranking ativo |
+| `RAG_RERANKING_ENABLED` | `false` | Reranking (requer sentence-transformers) |
 | `RAG_TRACING_ENABLED` | `false` | Tracing OpenTelemetry |
 | `RAG_TRACING_OTLP_ENDPOINT` | — | Endpoint OTLP (Jaeger) |
 
@@ -303,25 +328,22 @@ Variáveis de ambiente com prefixo `RAG_`:
 
 ##  Roadmap
 
-O projeto segue um plano de 15 dias. Status atual:
+O projeto foi planejado para 15 dias e entregue em **6 dias** de desenvolvimento com IA (DeepSeek + GPT-5.5 para planejamento inicial).
 
-| Dia | Feature | Status |
-|-----|---------|--------|
-| 1 | Setup + RAG funcional | ✅ |
-| 2 | Streaming no RAG (SSE) | ✅ |
-| 3 | Streaming no Agente | ✅ |
-| 4 | Chunking esperto | ✅ |
-| 5 | Reranking | ✅ |
-| 6 | Web Search Tool | ✅ |
-| 7 | MCP via SSE | ✅ |
-| 8 | Frontend React | ✅ |
-| 9 | Testes | ⏳ |
-| 10 | Rate limiting | ⏳ |
-| 11 | Deploy produção | ✅ |
-| 12 | LLMOps / Tracing | ✅ |
-| 13 | Documentação | ✅ |
-| 14 | Polimento | ✅ |
-| 15 | Publicar | ✅ |
+| Etapa | Feature | Status |
+|-------|---------|--------|
+| Setup | RAG funcional + ambiente | ✅ |
+| Streaming | SSE no RAG e no Agente | ✅ |
+| Agentes | LangGraph com 5 ferramentas | ✅ |
+| Documentos | Chunking inteligente (4 estrategias) + 15 formatos | ✅ |
+| Reranking | Cross-encoder (opcional) | ✅ |
+| Web Search | Busca via DuckDuckGo (gratis) | ✅ |
+| MCP | Protocolo via stdio + SSE/HTTP | ✅ |
+| Frontend | React 19 + streaming + upload | ✅ |
+| Deploy | Docker + Nginx + host-ollama (1GB RAM) | ✅ |
+| LLMOps | OpenTelemetry + Jaeger | ✅ |
+| Documentacao | README + docs diarios + PLANO.md | ✅ |
+| Polimento | CORS, validacoes, seguranca | ✅ |
 
 Detalhes em [`PLANO.md`](./PLANO.md) e `docs/`.
 
@@ -336,8 +358,8 @@ Detalhes em [`PLANO.md`](./PLANO.md) e `docs/`.
 | **Agentes** | LangGraph |
 | **MCP** | MCP Python SDK |
 | **Documentos** | PyPDF, python-docx, BeautifulSoup, Markdown |
-| **Reranking** | Sentence-Transformers |
-| **Observabilidade** | OpenTelemetry |
+| **Reranking** | Sentence-Transformers (opcional, desligado por padrão) |
+| **Observabilidade** | OpenTelemetry (opcional) |
 | **Frontend** | React, Vite, TypeScript, Vitest |
 
 ---
